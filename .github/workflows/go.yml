@@ -20,9 +20,26 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.20'
-
+    - name: Get version
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      
     - name: Build
       run: go build -v ./...
 
     - name: Test
       run: go test -v ./...
+  
+    - name: Packaging...
+      run: tar czf switchENV-${{ matrix.goos }}-${{ steps.get_version.outputs.VERSION }}.tgz OneAgent
+
+    - name: Uploading assets...
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} 
+        asset_path: ./switchENV-${{ matrix.goos }}-${{ steps.get_version.outputs.VERSION }}.tgz
+        asset_name: switchENV-${{ matrix.goos }}-${{ steps.get_version.outputs.VERSION }}.tgz
+        asset_content_type: application/gzip
