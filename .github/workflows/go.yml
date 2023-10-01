@@ -43,8 +43,8 @@ jobs:
       run: go test -v ./...
   
     - name: Packaging...
-      run: tar czf OneAgent.tar.gz OneAgent $GITHUB_WORKSPACE/config.json
-
+      run: cp $GITHUB_WORKSPACE/config.json . && tar czf OneAgent.tar.gz OneAgent config.json
+      
     - name: Uploading assets...
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
