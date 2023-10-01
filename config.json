@@ -1,16 +1,7 @@
 {
     "shellScript":
         [
-            {
-                "name":"aa",
-                "timeout":10.0,
-                "arguments":["/root/dev/OneAgent/examples/metric.sh"]
-            },
-            {
-                "name":"bb",
-                "timeout":2.0,
-                "arguments":["ping","127.0.0.1"]
-            }
+            
         ],
     "process":{
         "interval": 86400,

@@ -12,9 +12,26 @@
 1、进程和监控端口的对应关系
 进程A在22端口监听，连接到22端口的链接是在子进程B中，这个和Linux操作系统的进程模型有关系。  
 2、表结构说明
-process_host_info process=1表示全量获取进程信息，0表示增量进程信息
-network_host_info network=1表示全量获取进程信息，0表示增量进程信息
+process_host_info process=0表示全量获取进程信息，1表示增量进程信息，2为变更进程信息，3为删除的进程信息
+network_host_info network=0表示全量获取网络信息，1表示增量网络信息，2为变更网络信息，3为删除的网络信息
+3、Shell脚本输出格式
+echo "a1{t1=\"t\"} 1"
+其中a1为固定的指标，t1,t2,t3可有用户自己定义标签
+
 # 5、配置说明
+"shellScript":
+        [
+            {
+                "name":"aa",//脚本的标签名称
+                "timeout":10.0,//运行超时时间，需要为浮点数
+                "arguments":["/root/dev/OneAgent/examples/metric.sh"]//脚本位置
+            },
+            {
+                "name":"bb",
+                "timeout":2.0,
+                "arguments":["ping","127.0.0.1"]
+            }
+        ],
 "process":{  
         "interval": 10,//定义全量扫描的间隔秒数，建议周期为86400（1天）  
         "cpuOffset": 30,//当CPU变化量超过此值时发送进程信息，建议30  
