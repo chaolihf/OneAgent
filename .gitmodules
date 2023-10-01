@@ -1,0 +1,3 @@
+[submodule "node_exporter"]
+	path = node_exporter
+	url = https://github.com/chaolihf/node_exporter.git
