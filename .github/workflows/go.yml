@@ -31,7 +31,7 @@ jobs:
       run: go test -v ./...
   
     - name: Packaging...
-      run: tar czf switchENV-${{ matrix.goos }}-${{ steps.get_version.outputs.VERSION }}.tgz OneAgent
+      run: tar czf OneAgent.tar.gz OneAgent
 
     - name: Uploading assets...
       id: upload-release-asset 
@@ -40,6 +40,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }} 
-        asset_path: ./switchENV-${{ matrix.goos }}-${{ steps.get_version.outputs.VERSION }}.tgz
-        asset_name: switchENV-${{ matrix.goos }}-${{ steps.get_version.outputs.VERSION }}.tgz
+        asset_path: ./OneAgent.tar.gz
+        asset_name: OneAgent.tar.gz
         asset_content_type: application/gzip
