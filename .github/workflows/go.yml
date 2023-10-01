@@ -15,7 +15,7 @@ jobs:
     permissions: write-all
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Go
       uses: actions/setup-go@v4
@@ -43,7 +43,7 @@ jobs:
       run: go test -v ./...
   
     - name: Packaging...
-      run: tar czf OneAgent.tar.gz OneAgent
+      run: tar czf OneAgent.tar.gz OneAgent $GITHUB_WORKSPACE/config.json
 
     - name: Uploading assets...
       id: upload-release-asset 
