@@ -1,0 +1,29 @@
+{
+    "shellScript":
+        [
+            {
+                "name":"aa",
+                "timeout":10.0,
+                "arguments":["/root/dev/OneAgent/examples/metric.sh"]
+            },
+            {
+                "name":"bb",
+                "timeout":2.0,
+                "arguments":["ping","127.0.0.1"]
+            }
+        ],
+    "process":{
+        "interval": 86400,
+        "cpuOffset": 30,
+        "memoryOffset": 200000000,
+        "ioSpeedPerSecond": 5000000,
+        "openFileOffset": 100,
+        "threadOffset": 30,
+        "localLog":true
+    },
+    "network":{
+        "interval": 86400,
+        "counterOffset":100,
+        "localLog":true
+    }
+}
