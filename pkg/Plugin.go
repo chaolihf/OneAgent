@@ -20,25 +20,6 @@ const (
 	DT_Delete
 )
 
-/*
-输出插件接口类
-*/
-type Collector interface {
-
-	/*
-		实现获取指标的操作
-	*/
-	Update(ch chan<- prometheus.Metric) error
-}
-
-func registerCollector(collector string, isDefaultEnabled bool, factory func(logger log.Logger) (Collector, error)) {
-	newCollector, err := factory(logger)
-	if err == nil {
-		collectors = append(collectors, newCollector)
-	}
-
-}
-
 func GetAllCollector() []Collector {
 	return collectors
 }
