@@ -25,6 +25,16 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
+            "args": ["--runtime.gomaxprocs=2"]
+        },
+        {
+            "name": "FileBeat调试器",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/beats/filebeat/",
+            "args": ["--web.config.file","","--web.listen-address",":9999"]
         }
+
     ]
 }

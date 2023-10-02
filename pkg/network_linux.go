@@ -11,7 +11,7 @@ import (
 	jjson "github.com/chaolihf/udpgo/json"
 	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/shirou/gopsutil/net"
+	"github.com/shirou/gopsutil/v3/net"
 )
 
 /*

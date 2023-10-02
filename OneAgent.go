@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"com.chinatelecom.oneops.exporter/OneAgent/exporter"
-	node_expoter_main "github.com/chaolihf/node_exporter"
+	node_exporter_main "github.com/chaolihf/node_exporter"
 
 	//包引用是包含模块名/路径名/包名
 	collector "com.chinatelecom.oneops.exporter/OneAgent/pkg"
@@ -78,6 +78,7 @@ func limitResource() {
 
 func main() {
 	logger.Info("host collector\n")
+	node_exporter_main.Main()
 	flag.Parse()
 	if !strings.Contains(*listenAddress, ":9172") {
 		node_expoter_main.Main()
