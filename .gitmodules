@@ -1,3 +1,6 @@
 [submodule "node_exporter"]
 	path = node_exporter
 	url = https://github.com/chaolihf/node_exporter.git
+[submodule "beats"]
+	path = beats
+	url = https://github.com/elastic/beats.git
