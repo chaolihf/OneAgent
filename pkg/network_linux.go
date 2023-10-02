@@ -63,18 +63,23 @@ func newNetworkCollector(g_logger log.Logger) (Collector, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		logger.Log("读取文件出错:"+filePath, err)
-		return nil, err
+	} else {
+		jsonConfigInfos, err := jjson.NewJsonObject([]byte(content))
+		if err != nil {
+			logger.Log("JSON文件格式出错:", err)
+		} else {
+			jsonNetworkInfo := jsonConfigInfos.GetJsonObject("network")
+			return &NetworkCollector{
+				interval:      jsonNetworkInfo.GetInt("interval"),
+				counterOffset: jsonNetworkInfo.GetInt("counterOffset"),
+				localLog:      jsonNetworkInfo.GetBool("localLog"),
+			}, nil
+		}
 	}
-	jsonConfigInfos, err := jjson.NewJsonObject([]byte(content))
-	if err != nil {
-		logger.Log("JSON文件格式出错:", err)
-		return nil, err
-	}
-	jsonNetworkInfo := jsonConfigInfos.GetJsonObject("network")
 	return &NetworkCollector{
-		interval:      jsonNetworkInfo.GetInt("interval"),
-		counterOffset: jsonNetworkInfo.GetInt("counterOffset"),
-		localLog:      jsonNetworkInfo.GetBool("localLog"),
+		interval:      86400,
+		counterOffset: 100,
+		localLog:      true,
 	}, nil
 }
 

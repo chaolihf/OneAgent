@@ -6,12 +6,18 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"strings"
 
 	"com.chinatelecom.oneops.exporter/OneAgent/exporter"
+	node_expoter_main "github.com/chaolihf/node_exporter"
+
 	//包引用是包含模块名/路径名/包名
 	collector "com.chinatelecom.oneops.exporter/OneAgent/pkg"
 	"github.com/chaolihf/udpgo/lang"
 	"github.com/containerd/cgroups/v3/cgroup1"
+
+	//"github.com/elastic/beats/v7/filebeat/cmd"
+	//inputs "github.com/elastic/beats/v7/filebeat/input/default-inputs"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -25,7 +31,7 @@ var logger *zap.Logger
 var loggerDatas *exporter.LoggerData
 var (
 	showVersion   = flag.Bool("version", false, "Print version information.")
-	listenAddress = flag.String("web.listen-address", ":9172", "The address to listen on for HTTP requests.")
+	listenAddress = flag.String("web.listen-address", ":19172", "The address to listen on for HTTP requests.")
 	metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
 )
 
@@ -71,10 +77,13 @@ func limitResource() {
 }
 
 func main() {
+	logger.Info("host collector\n")
 	flag.Parse()
-	logger.Info("中国电信安徽公司省IT运营中心主机统一采集器\n")
+	if !strings.Contains(*listenAddress, ":9172") {
+		node_expoter_main.Main()
+	}
 	if *showVersion {
-		fmt.Println("版本号V0.0.1")
+		fmt.Println("version V1.6.1")
 		return
 	}
 	http.HandleFunc(*metricsPath, func(w http.ResponseWriter, r *http.Request) {

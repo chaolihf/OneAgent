@@ -65,23 +65,34 @@ func newProcessCollector(g_logger log.Logger) (Collector, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		logger.Log("读取文件出错:"+filePath, err)
-		return nil, err
+	} else {
+		jsonConfigInfos, err := jjson.NewJsonObject([]byte(content))
+		if err != nil {
+			logger.Log("JSON文件格式出错:", err)
+			return nil, err
+		} else {
+			jsonProcessInfo := jsonConfigInfos.GetJsonObject("process")
+			return &ProcessCollector{
+				interval:         jsonProcessInfo.GetInt("interval"),
+				lastCollectTime:  0,
+				cpuOffset:        jsonProcessInfo.GetInt("cpuOffset"),
+				memoryOffset:     jsonProcessInfo.GetInt("memoryOffset"),
+				ioSpeedPerSecond: jsonProcessInfo.GetInt("ioSpeedPerSecond"),
+				openFileOffset:   jsonProcessInfo.GetInt("openFileOffset"),
+				threadOffset:     jsonProcessInfo.GetInt("threadOffset"),
+				localLog:         jsonProcessInfo.GetBool("localLog"),
+			}, nil
+		}
 	}
-	jsonConfigInfos, err := jjson.NewJsonObject([]byte(content))
-	if err != nil {
-		logger.Log("JSON文件格式出错:", err)
-		return nil, err
-	}
-	jsonProcessInfo := jsonConfigInfos.GetJsonObject("process")
 	return &ProcessCollector{
-		interval:         jsonProcessInfo.GetInt("interval"),
+		interval:         86400,
 		lastCollectTime:  0,
-		cpuOffset:        jsonProcessInfo.GetInt("cpuOffset"),
-		memoryOffset:     jsonProcessInfo.GetInt("memoryOffset"),
-		ioSpeedPerSecond: jsonProcessInfo.GetInt("ioSpeedPerSecond"),
-		openFileOffset:   jsonProcessInfo.GetInt("openFileOffset"),
-		threadOffset:     jsonProcessInfo.GetInt("threadOffset"),
-		localLog:         jsonProcessInfo.GetBool("localLog"),
+		cpuOffset:        30,
+		memoryOffset:     200000000,
+		ioSpeedPerSecond: 5000000,
+		openFileOffset:   100,
+		threadOffset:     30,
+		localLog:         true,
 	}, nil
 }
 
