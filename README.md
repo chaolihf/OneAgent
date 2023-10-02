@@ -48,3 +48,8 @@ echo "a1{t1=\"t\"} 1"
         "localLog":true  
     }  
 ```
+
+# 6、源代码初始化
+git clone https://github.com/chaolihf/OneAgent  
+git submodule init  
+git submodule update    
