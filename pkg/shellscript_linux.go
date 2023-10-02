@@ -52,34 +52,41 @@ func newShellScriptCollector(g_logger log.Logger) (Collector, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		fmt.Println("读取文件出错:"+filePath, err)
-		return nil, err
-	}
-	jsonScriptInfos, err := jjson.NewJsonObject([]byte(content))
-	if err != nil {
-		fmt.Println("JSON文件格式出错:", err)
-		return nil, err
-	}
-	var scriptConfigs []ShellConfig
-	for _, jsonScriptInfo := range jsonScriptInfos.GetJsonArray("shellScript") {
-		jsonArguments := jsonScriptInfo.GetJsonArray("arguments")
-		arguments := []string{}
-		for _, jsonArgInfo := range jsonArguments {
-			arguments = append(arguments, jsonArgInfo.GetStringValue())
+	} else {
+		jsonScriptInfos, err := jjson.NewJsonObject([]byte(content))
+		if err != nil {
+			fmt.Println("JSON文件格式出错:", err)
+		} else {
+			var scriptConfigs []ShellConfig
+			for _, jsonScriptInfo := range jsonScriptInfos.GetJsonArray("shellScript") {
+				jsonArguments := jsonScriptInfo.GetJsonArray("arguments")
+				arguments := []string{}
+				for _, jsonArgInfo := range jsonArguments {
+					arguments = append(arguments, jsonArgInfo.GetStringValue())
+				}
+				scriptConfig := ShellConfig{
+					Name:     jsonScriptInfo.GetString("name"),
+					Timeout:  jsonScriptInfo.GetFloat("timeout"),
+					Argument: arguments,
+				}
+				scriptConfigs = append(scriptConfigs, scriptConfig)
+			}
+			return &Shell_Script{
+				lineParser: lineParser,
+				configs:    scriptConfigs,
+			}, nil
 		}
-		scriptConfig := ShellConfig{
-			Name:     jsonScriptInfo.GetString("name"),
-			Timeout:  jsonScriptInfo.GetFloat("timeout"),
-			Argument: arguments,
-		}
-		scriptConfigs = append(scriptConfigs, scriptConfig)
 	}
 	return &Shell_Script{
 		lineParser: lineParser,
-		configs:    scriptConfigs,
+		configs:    nil,
 	}, nil
 }
 
 func (collector *Shell_Script) Update(ch chan<- prometheus.Metric) error {
+	if collector.configs == nil {
+		return nil
+	}
 	scriptChannel := make([]chan string, len(collector.configs))
 	for index, config := range collector.configs {
 		scriptChannel[index] = make(chan string)
