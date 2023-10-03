@@ -81,7 +81,7 @@ func main() {
 	node_exporter_main.Main()
 	flag.Parse()
 	if !strings.Contains(*listenAddress, ":9172") {
-		node_expoter_main.Main()
+		node_exporter_main.Main()
 	}
 	if *showVersion {
 		fmt.Println("version V1.6.1")

@@ -18,6 +18,10 @@ github.com/chaolihf/node_exporter v1.6.2 h1:38bG1AEUvt6lVINe2gw82gZEBYnyOR/uNNaW
 github.com/chaolihf/node_exporter v1.6.2/go.mod h1:qnjiGmpnj3HeTvL78ccP83PI3w4USJH9936Vna6Tuuw=
 github.com/chaolihf/node_exporter v1.6.3 h1:pZRptdSCAyBPwVBzE6JLKeUFNi1+CUflMJG6/KmGrBE=
 github.com/chaolihf/node_exporter v1.6.3/go.mod h1:EwxXXQfJlNRFOrZg/ozEVXxpVaIBFBfy6n95xI7Zdcw=
+github.com/chaolihf/node_exporter v1.6.4 h1:zK1PMQcvbRvhw/815LG3rhphCCDISyIx3djNlxXh2wQ=
+github.com/chaolihf/node_exporter v1.6.4/go.mod h1:66YcAKNZiH2sGlunooiMwJGR8YRu2ku890m6SsUJTg8=
+github.com/chaolihf/node_exporter v1.6.5 h1:m+dSEOylGpzJvR/kgImpKfkiL4BVoPUh4n1Emx3nvFI=
+github.com/chaolihf/node_exporter v1.6.5/go.mod h1:66YcAKNZiH2sGlunooiMwJGR8YRu2ku890m6SsUJTg8=
 github.com/chaolihf/udpgo v0.0.11 h1:pVG6cMzWOjRDC0/Glh7bAjcRS7GCox0Gq2E0Ak/ySGA=
 github.com/chaolihf/udpgo v0.0.11/go.mod h1:+MgC8ewxYznU81AmQqGz7Xp5X1M27AJEN4WKjBM9kkw=
 github.com/chaolihf/udpgo v0.0.13 h1:PffwmW49o/WxbYD4j1T3cw7niCmMm2GzRW1gLdIWJsU=
