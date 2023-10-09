@@ -74,7 +74,7 @@ func newNetworkCollector(g_logger log.Logger) (Collector, error) {
 				interval:      jsonNetworkInfo.GetInt("interval"),
 				counterOffset: jsonNetworkInfo.GetInt("counterOffset"),
 				localLog:      jsonNetworkInfo.GetBool("localLog"),
-				enable:        jsonProcessInfo.GetBool("enable"),
+				enable:        jsonNetworkInfo.GetBool("enable"),
 			}, nil
 		}
 	}

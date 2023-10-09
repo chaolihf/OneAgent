@@ -33,7 +33,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/beats/oneagent",
-            "args": ["--web.config.file","","--web.listen-address",":9999"]
+            "args": ["--web.config.file","","--web.listen-address",":9999","--collector.softirqs", "--collector.systemd", "--collector.systemd.unit-include","(iptables|httpd|sshd).service" ],
         },
         {
             "name": "FileBeat调试器",
