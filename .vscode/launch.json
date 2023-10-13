@@ -17,7 +17,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["-web.listen-address",":9172"]
+            "args": ["--web.listen-address",":9172"]
         },
         {
             "name": "集成运行收集器",

@@ -22,6 +22,8 @@ github.com/chaolihf/node_exporter v1.6.4 h1:zK1PMQcvbRvhw/815LG3rhphCCDISyIx3djN
 github.com/chaolihf/node_exporter v1.6.4/go.mod h1:66YcAKNZiH2sGlunooiMwJGR8YRu2ku890m6SsUJTg8=
 github.com/chaolihf/node_exporter v1.6.5 h1:m+dSEOylGpzJvR/kgImpKfkiL4BVoPUh4n1Emx3nvFI=
 github.com/chaolihf/node_exporter v1.6.5/go.mod h1:66YcAKNZiH2sGlunooiMwJGR8YRu2ku890m6SsUJTg8=
+github.com/chaolihf/node_exporter v1.6.6 h1:p3VIEorhaJ02MDgUZEnXBZdfTEULLiGzoDoUt9G/XXc=
+github.com/chaolihf/node_exporter v1.6.6/go.mod h1:66YcAKNZiH2sGlunooiMwJGR8YRu2ku890m6SsUJTg8=
 github.com/chaolihf/udpgo v0.0.11 h1:pVG6cMzWOjRDC0/Glh7bAjcRS7GCox0Gq2E0Ak/ySGA=
 github.com/chaolihf/udpgo v0.0.11/go.mod h1:+MgC8ewxYznU81AmQqGz7Xp5X1M27AJEN4WKjBM9kkw=
 github.com/chaolihf/udpgo v0.0.13 h1:PffwmW49o/WxbYD4j1T3cw7niCmMm2GzRW1gLdIWJsU=
