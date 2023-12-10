@@ -78,6 +78,8 @@ func limitResource() {
 
 func main() {
 	logger.Info("host collector\n")
+	node_exporter_main.Main()
+	flag.Parse()
 	if !strings.Contains(*listenAddress, ":9172") {
 		node_exporter_main.Main()
 	}

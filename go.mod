@@ -1,6 +1,6 @@
 module com.chinatelecom.oneops.exporter/OneAgent
 
-go 1.20
+go 1.19
 
 require (
 	github.com/chaolihf/udpgo v0.0.13
@@ -8,7 +8,7 @@ require (
 	github.com/containerd/cgroups/v3 v3.0.1
 	github.com/opencontainers/runtime-spec v1.0.2
 	github.com/prometheus/client_golang v1.16.0
-	github.com/shirou/gopsutil v2.21.11+incompatible
+	github.com/shirou/gopsutil v3.21.11+incompatible
 	go.uber.org/zap v1.23.0
 	google.golang.org/protobuf v1.30.0
 )
@@ -21,7 +21,7 @@ require (
 	github.com/beevik/ntp v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/chaolihf/node_exporter v1.6.6 // indirect
+	github.com/chaolihf/node_exporter v1.6.5 // indirect
 	github.com/containerd/cgroups v1.1.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -39,7 +39,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-envparse v0.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -74,9 +74,9 @@ require (
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/safchain/ethtool v0.3.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.20.10 // indirect
-	github.com/tklauser/go-sysconf v0.3.11 // indirect
-	github.com/tklauser/numcpus v0.6.0 // indirect
+	github.com/chaolihf/gopsutil v3.23.11 // indirect
+	github.com/tklauser/go-sysconf v0.3.12 // indirect
+	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
@@ -86,7 +86,7 @@ require (
 	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.10.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

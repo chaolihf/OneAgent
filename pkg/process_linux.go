@@ -7,10 +7,10 @@ import (
 	"sort"
 	"time"
 
+	"github.com/chaolihf/gopsutil/process"
 	jjson "github.com/chaolihf/udpgo/json"
 	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/shirou/gopsutil/v3/process"
 )
 
 /*
