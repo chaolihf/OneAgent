@@ -16,8 +16,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-//see https://github.com/frohoff/jdk8u-jdk/blob/master/src/share/classes/sun/tools/attach/HotSpotVirtualMachine.java https://github.com/jattach/jattach https://github.com/hengyoush/Java-Agent-Loader
-
+// see https://github.com/frohoff/jdk8u-jdk/blob/master/src/share/classes/sun/tools/attach/HotSpotVirtualMachine.java https://github.com/jattach/jattach
+// https://github.com/openjdk/jdk search HotSpotVirtualMachine.java , all command
 const ATTACH_ERROR_BADVERSION = 101
 const JNI_ENOMEM = -4
 const ATTACH_ERROR_BADJAR = 100
@@ -43,26 +43,58 @@ func newJavaCollector(g_logger log.Logger) (Collector, error) {
 }
 
 func (javaCollector *JavaCollector) Update(ch chan<- prometheus.Metric) error {
+	ScanAllProcess()
+	return nil
+}
+
+func ScanAllProcess() error {
 	allProcess, err := process.Processes()
-	if err == nil {
+	if err != nil {
 		logger.Log(err.Error())
-	} else {
-		for _, process := range allProcess {
-			name, err := process.Name()
-			if err == nil {
+		return err
+	}
+	uid := os.Getuid()
+	gid := os.Getgid()
+	for _, process := range allProcess {
+		name, err := process.Name()
+		if err != nil {
+			logger.Log(err.Error())
+			return err
+		}
+		if name == "java" {
+			uids, err := process.Uids()
+			if err != nil {
 				logger.Log(err.Error())
-			} else {
-				if name == "java" {
-					AttachJava(process.Pid)
-				}
+				return err
 			}
+			gids, err := process.Gids()
+			if err != nil {
+				logger.Log(err.Error())
+				return err
+			}
+			newUid := int(uids[0])
+			newGid := int(gids[0])
+			if newGid != gid {
+				syscall.Setgid(newUid)
+			}
+			if newUid != uid {
+				syscall.Setuid(newUid)
+			}
+			attachJava(process.Pid)
+			if newGid != gid {
+				syscall.Setgid(gid)
+			}
+			if newUid != uid {
+				syscall.Setuid(uid)
+			}
+
 		}
 	}
 	return nil
 }
 
-func AttachJava(pid int32) {
-	fmt.Println("Attach Java")
+func attachJava(pid int32) {
+	logger.Log(fmt.Sprintf("Attach Java %d\n", pid))
 	socketFileName := fmt.Sprintf("/proc/%d/root/tmp/.java_pid%d", pid, pid)
 	if !FileExist(socketFileName) {
 		// create attach file
@@ -94,6 +126,7 @@ func AttachJava(pid int32) {
 				timeSpend)
 		}
 	}
+
 	conn, err := net.Dial("unix", socketFileName)
 	if err != nil {
 		logger.Log("fail to connect socketpath: %s, %v\n", socketFileName, err)
@@ -106,7 +139,6 @@ func AttachJava(pid int32) {
 		logger.Log(err)
 	}
 	logger.Log("load success!")
-
 }
 
 func createAttachFile(pid int32) (*os.File, error) {
@@ -143,7 +175,6 @@ func loadAgentLibrary(conn net.Conn, agentLibrary string, isAbs bool, options st
 	args[2] = options
 	err := execute(conn, "threaddump", args)
 	if err == nil {
-
 		bytes, err := io.ReadAll(conn)
 		if err != nil {
 			return err
