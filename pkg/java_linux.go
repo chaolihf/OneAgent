@@ -14,6 +14,7 @@ import (
 	"github.com/chaolihf/gopsutil/process"
 	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/sys/unix"
 )
 
 // see https://github.com/frohoff/jdk8u-jdk/blob/master/src/share/classes/sun/tools/attach/HotSpotVirtualMachine.java https://github.com/jattach/jattach
@@ -72,6 +73,7 @@ func ScanAllProcess() error {
 				logger.Log(err.Error())
 				return err
 			}
+			unix.Setns(int(process.Pid), unix.CLONE_NEWUTS)
 			newUid := int(uids[0])
 			newGid := int(gids[0])
 			if newGid != gid {
@@ -97,6 +99,8 @@ func attachJava(pid int32) {
 	logger.Log(fmt.Sprintf("Attach Java %d\n", pid))
 	socketFileName := fmt.Sprintf("/proc/%d/root/tmp/.java_pid%d", pid, pid)
 	if !FileExist(socketFileName) {
+		// Force remote JVM to start Attach listener.
+		// HotSpot will start Attach listener in response to SIGQUIT if it sees .attach_pid file
 		// create attach file
 		attachFile, err := createAttachFile(pid)
 		if err != nil {
@@ -310,4 +314,29 @@ func readErrorMessage(conn net.Conn) (string, error) {
 		return "", err
 	}
 	return string(bytes), nil
+}
+
+func enterNamespace(pid int, nstype string) error {
+	targetFile := fmt.Sprintf("/proc/%d/ns/%s", pid, nstype)
+	selfFile := fmt.Sprintf("/proc/self/ns/%s", nstype)
+	var statTargetFile syscall.Stat_t
+	var statSelfFile syscall.Stat_t
+	if err := syscall.Stat(targetFile, &statTargetFile); err != nil {
+		return err
+	}
+	if err := syscall.Stat(selfFile, &statSelfFile); err != nil {
+		return err
+	} // Don't try to call setns() if we're in the same namespace already
+	if statTargetFile.Ino != statSelfFile.Ino {
+		fd, err := os.Open(targetFile)
+		if err != nil {
+			return err
+		}
+		defer fd.Close()
+		err = unix.Setns(int(fd.Fd()), unix.CLONE_NEWNET)
+		if err != nil {
+			logger.Log("Error setting namespace:" + err.Error())
+			return err
+		}
+	}
 }
