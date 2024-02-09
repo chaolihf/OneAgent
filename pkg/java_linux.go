@@ -63,6 +63,11 @@ func ScanAllProcess() error {
 			return err
 		}
 		if name == "java" {
+			pid := int(process.Pid)
+			enterNamespace(pid, "net")
+			enterNamespace(pid, "ipc")
+			mnt_changed := enterNamespace(pid, "mnt")
+
 			uids, err := process.Uids()
 			if err != nil {
 				logger.Log(err.Error())
@@ -316,27 +321,30 @@ func readErrorMessage(conn net.Conn) (string, error) {
 	return string(bytes), nil
 }
 
-func enterNamespace(pid int, nstype string) error {
+func enterNamespace(pid int, nstype string) (int, error) {
 	targetFile := fmt.Sprintf("/proc/%d/ns/%s", pid, nstype)
 	selfFile := fmt.Sprintf("/proc/self/ns/%s", nstype)
 	var statTargetFile syscall.Stat_t
 	var statSelfFile syscall.Stat_t
 	if err := syscall.Stat(targetFile, &statTargetFile); err != nil {
-		return err
+		return 0, err
 	}
 	if err := syscall.Stat(selfFile, &statSelfFile); err != nil {
-		return err
+		return 0, err
 	} // Don't try to call setns() if we're in the same namespace already
 	if statTargetFile.Ino != statSelfFile.Ino {
 		fd, err := os.Open(targetFile)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		defer fd.Close()
 		err = unix.Setns(int(fd.Fd()), unix.CLONE_NEWNET)
 		if err != nil {
 			logger.Log("Error setting namespace:" + err.Error())
-			return err
+			return 0, err
+		} else {
+			return 1, nil
 		}
 	}
+	return 0, nil
 }
