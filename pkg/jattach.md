@@ -1,10 +1,10 @@
 # 说明jattach项目在VSCODE中运行的方法
-1、clone项目
-2、在linux下安装clang等包
-3、安装VSCODE，并安装C/C++插件
-4、主要的配置项目
-task.json
-```
+1、clone项目  
+2、在linux下安装clang等包  
+3、安装VSCODE，并安装C/C++插件  
+4、主要的配置项目  
+task.json  
+```json
 {
     "tasks": [
         {
@@ -36,8 +36,8 @@ task.json
 }
 ```
 
-launch.json
-```
+launch.json  
+```json
 {
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.

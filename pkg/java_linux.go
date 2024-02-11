@@ -64,10 +64,18 @@ func ScanAllProcess() error {
 		}
 		if name == "java" {
 			pid := int(process.Pid)
+			nsPid, err := process.GetContainerPid()
+			if err != nil {
+				logger.Log(err.Error())
+				continue
+			}
 			enterNamespace(pid, "net")
 			enterNamespace(pid, "ipc")
 			mnt_changed := enterNamespace(pid, "mnt")
-
+			if err != nil {
+				logger.Log(err.Error())
+				continue
+			}
 			uids, err := process.Uids()
 			if err != nil {
 				logger.Log(err.Error())
@@ -78,7 +86,7 @@ func ScanAllProcess() error {
 				logger.Log(err.Error())
 				return err
 			}
-			unix.Setns(int(process.Pid), unix.CLONE_NEWUTS)
+			//unix.Setns(pid, unix.CLONE_NEWUTS)
 			newUid := int(uids[0])
 			newGid := int(gids[0])
 			if newGid != gid {
@@ -87,7 +95,7 @@ func ScanAllProcess() error {
 			if newUid != uid {
 				syscall.Setuid(newUid)
 			}
-			attachJava(process.Pid)
+			attachJava(pid, nsPid, mnt_changed)
 			if newGid != gid {
 				syscall.Setgid(gid)
 			}
@@ -100,19 +108,24 @@ func ScanAllProcess() error {
 	return nil
 }
 
-func attachJava(pid int32) {
+func attachJava(pid int, nsPid int32, mnt_changed int) {
 	logger.Log(fmt.Sprintf("Attach Java %d\n", pid))
-	socketFileName := fmt.Sprintf("/proc/%d/root/tmp/.java_pid%d", pid, pid)
+	var socketFileName string
+	if mnt_changed == 0 {
+		socketFileName = fmt.Sprintf("/proc/%d/root/tmp/.java_pid%d", pid, pid)
+	} else {
+		socketFileName = fmt.Sprintf("/proc/%d/root/tmp/.java_pid%d", nsPid, nsPid)
+	}
 	if !FileExist(socketFileName) {
 		// Force remote JVM to start Attach listener.
 		// HotSpot will start Attach listener in response to SIGQUIT if it sees .attach_pid file
 		// create attach file
-		attachFile, err := createAttachFile(pid)
+		attachFile, err := createAttachFile(pid, nsPid, mnt_changed)
 		if err != nil {
 			logger.Log("fail to create attach file, %v\n", err)
 		}
 		defer os.Remove(attachFile.Name())
-		err = syscall.Kill(int(pid), syscall.SIGQUIT)
+		err = syscall.Kill(pid, syscall.SIGQUIT)
 		if err != nil {
 			logger.Log("fail to send quit, %v\n", err)
 		}
@@ -150,8 +163,13 @@ func attachJava(pid int32) {
 	logger.Log("load success!")
 }
 
-func createAttachFile(pid int32) (*os.File, error) {
-	fn := fmt.Sprintf(".attach_pid%d", pid)
+func createAttachFile(pid int, nsPid int32, mnt_changed int) (*os.File, error) {
+	var fn string
+	if mnt_changed != 0 {
+		fn = fmt.Sprintf(".attach_pid%d", nsPid)
+	} else {
+		fn = fmt.Sprintf(".attach_pid%d", pid)
+	}
 	path := fmt.Sprintf("/proc/%d/cwd/%s", pid, fn)
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
@@ -321,30 +339,33 @@ func readErrorMessage(conn net.Conn) (string, error) {
 	return string(bytes), nil
 }
 
-func enterNamespace(pid int, nstype string) (int, error) {
+/*
+0: not namespace
+1,-1: change result
+*/
+func enterNamespace(pid int, nstype string) int {
 	targetFile := fmt.Sprintf("/proc/%d/ns/%s", pid, nstype)
 	selfFile := fmt.Sprintf("/proc/self/ns/%s", nstype)
 	var statTargetFile syscall.Stat_t
 	var statSelfFile syscall.Stat_t
 	if err := syscall.Stat(targetFile, &statTargetFile); err != nil {
-		return 0, err
+		return 0
 	}
 	if err := syscall.Stat(selfFile, &statSelfFile); err != nil {
-		return 0, err
+		return 0
 	} // Don't try to call setns() if we're in the same namespace already
 	if statTargetFile.Ino != statSelfFile.Ino {
 		fd, err := os.Open(targetFile)
 		if err != nil {
-			return 0, err
+			return 0
 		}
 		defer fd.Close()
-		err = unix.Setns(int(fd.Fd()), unix.CLONE_NEWNET)
+		err = unix.Setns(int(fd.Fd()), 0)
 		if err != nil {
-			logger.Log("Error setting namespace:" + err.Error())
-			return 0, err
+			return 1
 		} else {
-			return 1, nil
+			return -1
 		}
 	}
-	return 0, nil
+	return 0
 }
