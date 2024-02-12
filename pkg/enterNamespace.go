@@ -25,7 +25,8 @@ __attribute__((constructor)) void enter_namespace(void) {
     unsetenv("mydocker_cmd");
     int i;
     char nspath[1024];
-    char *namespaces[] = { "ipc", "uts", "net", "pid", "mnt" };
+    //char *namespaces[] = { "ipc", "uts", "net", "pid", "mnt" };
+	char *namespaces[] = { "ipc", "net", "mnt" };
     for (i=0; i<sizeof(namespaces)/sizeof(namespaces[0]); i++) {
         sprintf(nspath, "/proc/%s/ns/%s", mydocker_pid, namespaces[i]);
         int fd = open(nspath, O_RDONLY);
@@ -37,6 +38,11 @@ __attribute__((constructor)) void enter_namespace(void) {
         close(fd);
     }
     fprintf(stdout, "enter pid %s's namespace and to run %s\n",mydocker_pid,mydocker_cmd);
+	char currentPath[256];
+
+    if (getcwd(currentPath, sizeof(currentPath)) != NULL) {
+        printf("Current path: %s\n", currentPath);
+    }
     int res = system(mydocker_cmd);
     exit(0);
     return;
@@ -80,12 +86,16 @@ func ExecuteCommandOnNewNamesapce() {
 func executeJavaCommand(commands map[string]string) {
 	switch commands["p0"] {
 	case "threaddump":
-		pid, err := strconv.Atoi(commands["pid"])
+		pid, err := strconv.Atoi(commands["p1"])
 		if err != nil {
 			logger.Log(err.Error())
-		} else {
-			attachJava(pid)
+			return
 		}
-
+		nsPid, err := strconv.Atoi(commands["p2"])
+		if err != nil {
+			logger.Log(err.Error())
+			return
+		}
+		attachJava(nsPid, pid)
 	}
 }
