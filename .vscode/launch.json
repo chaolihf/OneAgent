@@ -17,7 +17,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["--namespace","--cmd=java","--pid=18868","--p0=threaddump"]
+            "args": ["--cmd=java","--pid=14835","--p0=threaddump"]
         },
         {
             "name": "独立运行收集器",
@@ -51,7 +51,7 @@
             "program": "${workspaceFolder}/beats/filebeat"
         },
         {
-            "name": "调试设置Namespace",
+            "name": "debug enter Namespace(c++)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/setNamespace.out",
@@ -74,7 +74,6 @@
                 }
             ],
             "preLaunchTask": "buildNamespace"
-        }
-
+        },
     ]
 }

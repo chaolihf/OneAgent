@@ -64,12 +64,12 @@ func ScanAllProcess() error {
 		}
 		if name == "java" {
 			pid := int(process.Pid)
-			nsPid, err := process.GetContainerPid()
+			nsPid, err := process.GetNamespacePid()
 			if err != nil {
 				logger.Log(err.Error())
 				continue
 			}
-			if nsPid > 0 {
+			if nsPid > 0 && pid != int(nsPid) {
 				os.Setenv("mydocker_pid", strconv.Itoa(int(nsPid)))
 				os.Setenv("mydocker_cmd", fmt.Sprintf("--namespace --cmd=java --pid=%d --p0=threaddump", nsPid))
 				cmd := exec.Command("/proc/self/exe")
@@ -114,8 +114,7 @@ func ScanAllProcess() error {
 
 func attachJava(pid int) {
 	logger.Log(fmt.Sprintf("Attach Java %d\n", pid))
-	var socketFileName string
-	socketFileName = fmt.Sprintf("/proc/%d/root/tmp/.java_pid%d", pid, pid)
+	socketFileName := fmt.Sprintf("/proc/%d/root/tmp/.java_pid%d", pid, pid)
 	if !FileExist(socketFileName) {
 		// Force remote JVM to start Attach listener.
 		// HotSpot will start Attach listener in response to SIGQUIT if it sees .attach_pid file
@@ -123,6 +122,7 @@ func attachJava(pid int) {
 		attachFile, err := createAttachFile(pid)
 		if err != nil {
 			logger.Log("fail to create attach file, %v\n", err)
+			return
 		}
 		defer os.Remove(attachFile.Name())
 		err = syscall.Kill(pid, syscall.SIGQUIT)
@@ -146,6 +146,7 @@ func attachJava(pid int) {
 				"target process %d doesn't respond within %dms "+
 				"or HotSpot VM not loaded\n", socketFileName, pid,
 				timeSpend)
+			return
 		}
 	}
 
