@@ -70,8 +70,9 @@ func ScanAllProcess() error {
 				continue
 			}
 			if nsPid > 0 && pid != int(nsPid) {
-				os.Setenv("mydocker_pid", strconv.Itoa(int(nsPid)))
-				os.Setenv("mydocker_cmd", fmt.Sprintf("--namespace --cmd=java --pid=%d --p0=threaddump", nsPid))
+				os.Setenv("mydocker_pid", strconv.Itoa(int(pid)))
+				//executePath, _ := os.Executable()
+				os.Setenv("mydocker_cmd", fmt.Sprintf("/OneAgent --cmd=java --p0=threaddump --p1=%d --p2=%d", pid, nsPid))
 				cmd := exec.Command("/proc/self/exe")
 				cmd.Stdin = os.Stdin
 				cmd.Stdout = os.Stdout
@@ -99,7 +100,7 @@ func ScanAllProcess() error {
 			if newUid != uid {
 				syscall.Setuid(newUid)
 			}
-			attachJava(pid)
+			attachJava(pid, pid)
 			if newGid != gid {
 				syscall.Setgid(gid)
 			}
@@ -112,8 +113,11 @@ func ScanAllProcess() error {
 	return nil
 }
 
-func attachJava(pid int) {
-	logger.Log(fmt.Sprintf("Attach Java %d\n", pid))
+/*
+pid为命名空间内对应的进程id，hostPid为宿主机的进程id
+*/
+func attachJava(pid int, hostPid int) {
+	logger.Log("Info", fmt.Sprintf("Attach Java %d\n", pid))
 	socketFileName := fmt.Sprintf("/proc/%d/root/tmp/.java_pid%d", pid, pid)
 	if !FileExist(socketFileName) {
 		// Force remote JVM to start Attach listener.
@@ -125,12 +129,13 @@ func attachJava(pid int) {
 			return
 		}
 		defer os.Remove(attachFile.Name())
-		err = syscall.Kill(pid, syscall.SIGQUIT)
+		logger.Log("INFO", fmt.Sprintf("start to kill process %d\n", hostPid))
+		err = syscall.Kill(hostPid, syscall.SIGQUIT)
 		if err != nil {
 			logger.Log("fail to send quit, %v\n", err)
 		}
 		delayStep := 100
-		attachTimeout := 3000
+		attachTimeout := 300000
 		timeSpend := 0
 		delay := 0
 		for timeSpend <= attachTimeout && !FileExist(socketFileName) {
@@ -138,21 +143,22 @@ func attachJava(pid int) {
 			time.Sleep(time.Millisecond * time.Duration(delay))
 			timeSpend += delay
 			if timeSpend > attachTimeout/2 && !FileExist(socketFileName) {
-				syscall.Kill(int(pid), syscall.SIGQUIT)
+				logger.Log("INFO", fmt.Sprintf("start to kill process %d again!\n", hostPid))
+				syscall.Kill(int(hostPid), syscall.SIGQUIT)
 			}
 		}
 		if !FileExist(socketFileName) {
-			logger.Log("Unable to open socket file %s: "+
+			logger.Log("INFO", fmt.Sprintf("Unable to open socket file %s: "+
 				"target process %d doesn't respond within %dms "+
 				"or HotSpot VM not loaded\n", socketFileName, pid,
-				timeSpend)
+				timeSpend))
 			return
 		}
 	}
 
 	conn, err := net.Dial("unix", socketFileName)
 	if err != nil {
-		logger.Log("fail to connect socketpath: %s, %v\n", socketFileName, err)
+		logger.Log("INFO", fmt.Sprintf("fail to connect socketpath: %s, %v\n", socketFileName, err))
 	}
 	defer conn.Close()
 	//cmds := agentFilePath + "=" + options
@@ -173,10 +179,10 @@ func createAttachFile(pid int) (*os.File, error) {
 		if err != nil {
 			return nil, err
 		} else {
-			logger.Log("create attach pid file success2!\n")
+			logger.Log("Info", fmt.Sprintf("create attach pid file success2 %s!\n", path))
 		}
 	} else {
-		logger.Log("create attach pid file success!\n")
+		logger.Log("Info", fmt.Sprintf("create attach pid file success %s!\n", path))
 	}
 	return file, nil
 
