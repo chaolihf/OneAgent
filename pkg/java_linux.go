@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"syscall"
@@ -14,7 +15,6 @@ import (
 	"github.com/chaolihf/gopsutil/process"
 	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/sys/unix"
 )
 
 // see https://github.com/frohoff/jdk8u-jdk/blob/master/src/share/classes/sun/tools/attach/HotSpotVirtualMachine.java https://github.com/jattach/jattach
@@ -69,12 +69,17 @@ func ScanAllProcess() error {
 				logger.Log(err.Error())
 				continue
 			}
-			enterNamespace(pid, "net")
-			enterNamespace(pid, "ipc")
-			mnt_changed := enterNamespace(pid, "mnt")
-			if err != nil {
-				logger.Log(err.Error())
-				continue
+			if nsPid > 0 {
+				os.Setenv("mydocker_pid", strconv.Itoa(int(nsPid)))
+				os.Setenv("mydocker_cmd", fmt.Sprintf("--namespace --cmd=java --pid=%d --p0=threaddump", nsPid))
+				cmd := exec.Command("/proc/self/exe")
+				cmd.Stdin = os.Stdin
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+
+				if err := cmd.Run(); err != nil {
+					logger.Log(err.Error())
+				}
 			}
 			uids, err := process.Uids()
 			if err != nil {
@@ -86,7 +91,6 @@ func ScanAllProcess() error {
 				logger.Log(err.Error())
 				return err
 			}
-			//unix.Setns(pid, unix.CLONE_NEWUTS)
 			newUid := int(uids[0])
 			newGid := int(gids[0])
 			if newGid != gid {
@@ -95,7 +99,7 @@ func ScanAllProcess() error {
 			if newUid != uid {
 				syscall.Setuid(newUid)
 			}
-			attachJava(pid, nsPid, mnt_changed)
+			attachJava(pid)
 			if newGid != gid {
 				syscall.Setgid(gid)
 			}
@@ -108,19 +112,15 @@ func ScanAllProcess() error {
 	return nil
 }
 
-func attachJava(pid int, nsPid int32, mnt_changed int) {
+func attachJava(pid int) {
 	logger.Log(fmt.Sprintf("Attach Java %d\n", pid))
 	var socketFileName string
-	if mnt_changed == 0 {
-		socketFileName = fmt.Sprintf("/proc/%d/root/tmp/.java_pid%d", pid, pid)
-	} else {
-		socketFileName = fmt.Sprintf("/proc/%d/root/tmp/.java_pid%d", nsPid, nsPid)
-	}
+	socketFileName = fmt.Sprintf("/proc/%d/root/tmp/.java_pid%d", pid, pid)
 	if !FileExist(socketFileName) {
 		// Force remote JVM to start Attach listener.
 		// HotSpot will start Attach listener in response to SIGQUIT if it sees .attach_pid file
 		// create attach file
-		attachFile, err := createAttachFile(pid, nsPid, mnt_changed)
+		attachFile, err := createAttachFile(pid)
 		if err != nil {
 			logger.Log("fail to create attach file, %v\n", err)
 		}
@@ -163,13 +163,8 @@ func attachJava(pid int, nsPid int32, mnt_changed int) {
 	logger.Log("load success!")
 }
 
-func createAttachFile(pid int, nsPid int32, mnt_changed int) (*os.File, error) {
-	var fn string
-	if mnt_changed != 0 {
-		fn = fmt.Sprintf(".attach_pid%d", nsPid)
-	} else {
-		fn = fmt.Sprintf(".attach_pid%d", pid)
-	}
+func createAttachFile(pid int) (*os.File, error) {
+	fn := fmt.Sprintf(".attach_pid%d", pid)
 	path := fmt.Sprintf("/proc/%d/cwd/%s", pid, fn)
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
@@ -360,12 +355,20 @@ func enterNamespace(pid int, nstype string) int {
 			return 0
 		}
 		defer fd.Close()
-		err = unix.Setns(int(fd.Fd()), 0)
-		if err != nil {
-			return 1
-		} else {
+		const SYS_SETNS = 308
+		res, _, _ := syscall.RawSyscall(SYS_SETNS, fd.Fd(), 0, 0)
+		if res != 0 {
 			return -1
+		} else {
+			return 1
 		}
+
+		//err = unix.Setns(int(fd.Fd()), 0)
+		// if err == nil {
+		// 	return 1
+		// } else {
+		// 	return -1
+		// }
 	}
 	return 0
 }
