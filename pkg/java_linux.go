@@ -1,5 +1,10 @@
 package collector
 
+/*
+#include "cgo/jattach.c"
+*/
+import "C"
+
 import (
 	"errors"
 	"fmt"
@@ -70,6 +75,7 @@ func ScanAllProcess() error {
 				continue
 			}
 			if nsPid > 0 && pid != int(nsPid) {
+				callJavaAttach(pid, "threaddump", "")
 				os.Setenv("mydocker_pid", strconv.Itoa(int(pid)))
 				os.Setenv("mydocker_cmd", fmt.Sprintf("/OneAgent --cmd=java --p0=threaddump --p1=%d --p2=%d", pid, nsPid))
 				//os.Setenv("mydocker_cmd", "ls -l")
@@ -111,6 +117,11 @@ func ScanAllProcess() error {
 		}
 	}
 	return nil
+}
+
+func callJavaAttach(pid int, command string, params string) {
+	result := C.jattach(C.int(pid), C.CString(command), C.CString(params), C.int(1))
+	fmt.Println("Result:", int(result))
 }
 
 /*

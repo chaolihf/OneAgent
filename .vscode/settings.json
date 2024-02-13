@@ -1,6 +1,18 @@
 {
     "Codegeex.SidebarUI.LanguagePreference": "中文",
     "files.associations": {
-        "cstdlib": "c"
-    }
+        "cstdlib": "c",
+        "stdio.h": "c",
+        "sched.h": "c",
+        "cpu-set.h": "c",
+        "types.h": "c",
+        "unistd.h": "c",
+        "stdlib.h": "c",
+        "fcntl.h": "c",
+        "psutil.h": "c",
+        "syscall.h": "c",
+        "un.h": "c",
+        "sockaddr.h": "c"
+    },
+    "cmake.configureOnOpen": false
 }

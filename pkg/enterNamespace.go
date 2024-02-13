@@ -1,7 +1,7 @@
 package collector
 
 /*
-#include "cgo/setNamespace.c"
+//#include "cgo/setNamespace.c"
 */
 import "C"
 import (
