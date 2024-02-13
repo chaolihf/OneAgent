@@ -51,7 +51,7 @@
             "program": "${workspaceFolder}/beats/filebeat"
         },
         {
-            "name": "debug enter Namespace(c++)",
+            "name": "测试进入命名空间函数(clang)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/setNamespace.out",

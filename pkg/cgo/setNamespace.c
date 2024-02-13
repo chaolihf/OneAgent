@@ -38,9 +38,3 @@ __attribute__((constructor)) void enter_namespace(void) {
     exit(0);
     return;
 }
-
-
-int main(int argc, char *argv[]){
-    return 0;
-}
-

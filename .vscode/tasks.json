@@ -8,7 +8,7 @@
                 "-fdiagnostics-color=always",
                 "-DJATTACH_VERSION=\"2.2.0\"",
                 "-g",
-                "${workspaceFolder}/pkg/test/*.c",
+                "${workspaceFolder}/pkg/cgo/setNamespace_test.c",
                 "-o",
                 "setNamespace.out"
             ],

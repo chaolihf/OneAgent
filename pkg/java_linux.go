@@ -71,8 +71,8 @@ func ScanAllProcess() error {
 			}
 			if nsPid > 0 && pid != int(nsPid) {
 				os.Setenv("mydocker_pid", strconv.Itoa(int(pid)))
-				//executePath, _ := os.Executable()
 				os.Setenv("mydocker_cmd", fmt.Sprintf("/OneAgent --cmd=java --p0=threaddump --p1=%d --p2=%d", pid, nsPid))
+				//os.Setenv("mydocker_cmd", "ls -l")
 				cmd := exec.Command("/proc/self/exe")
 				cmd.Stdin = os.Stdin
 				cmd.Stdout = os.Stdout
