@@ -258,10 +258,10 @@ static int write_command(int fd, char * command, char* arguments) {
     char* p = stpncpy(buf, "1", sizeof(buf)) + 1;
 
     p = stpncpy(p, command, limit - p) + 1;
-    char * space=" ";
-    p = stpncpy(p, space, limit - p) + 1;
-    p = stpncpy(p, arguments, limit - p) + 1;
-    for (;p < limit; ) {
+    //char* space=" ";
+    //p = stpncpy(p, space, limit - p) + 1;
+    //p = stpncpy(p, arguments, limit - p) + 1;
+    for (int i=1;i<4 && p < limit;i++ ) {
         *p++ = 0;
     }
 
