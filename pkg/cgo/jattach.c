@@ -19,10 +19,19 @@
 #include "utils.c"
 #include "hotspot.c"
 #include "openj9.c"
+#include "common.c"
 
 char tmp_path[MAX_PATH - 100];
 
-int jattach(int pid, char * command, char* arguments, int print_output) {
+int jattach(unsigned char** byteArray, size_t* length,int pid, char * command, char* arguments, int print_output) {
+    struct OutputQueue *queue=initOutputQueue();
+    addOutputNode(queue,sizeof("hello"),"hello");
+    addOutputNode(queue,sizeof("world"),"world");
+    int size;
+    char** result;
+    output(queue,&result,&size);
+    printf("%s",result);
+
     printf("jattach %s %s\n",command,arguments);
     uid_t my_uid = geteuid();
     gid_t my_gid = getegid();
@@ -54,7 +63,8 @@ int jattach(int pid, char * command, char* arguments, int print_output) {
     if (is_openj9_process(nspid)) {
         //return jattach_openj9(pid, nspid, argc, argv, print_output);
     } else {
-        return jattach_hotspot(pid, nspid, command, arguments, print_output,mnt_changed);
+        jattach_hotspot(pid, nspid, command, arguments, print_output,mnt_changed,byteArray,length);
+        return 0;    
     }
-    return 0;
+    return 1;
 }

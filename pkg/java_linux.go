@@ -11,11 +11,11 @@ import (
 	"io"
 	"net"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
+	"unsafe"
 
 	"github.com/chaolihf/gopsutil/process"
 	"github.com/go-kit/log"
@@ -75,53 +75,64 @@ func ScanAllProcess() error {
 				continue
 			}
 			if nsPid > 0 && pid != int(nsPid) {
-				callJavaAttach(pid, "threaddump", "")
-				os.Setenv("mydocker_pid", strconv.Itoa(int(pid)))
-				os.Setenv("mydocker_cmd", fmt.Sprintf("/OneAgent --cmd=java --p0=threaddump --p1=%d --p2=%d", pid, nsPid))
-				//os.Setenv("mydocker_cmd", "ls -l")
-				cmd := exec.Command("/proc/self/exe")
-				cmd.Stdin = os.Stdin
-				cmd.Stdout = os.Stdout
-				cmd.Stderr = os.Stderr
-
-				if err := cmd.Run(); err != nil {
+				err := callJavaAttach(pid, "threaddump", "")
+				if err != nil {
 					logger.Log(err.Error())
+					continue
+				}
+				// os.Setenv("mydocker_pid", strconv.Itoa(int(pid)))
+				// os.Setenv("mydocker_cmd", fmt.Sprintf("/OneAgent --cmd=java --p0=threaddump --p1=%d --p2=%d", pid, nsPid))
+				// //os.Setenv("mydocker_cmd", "ls -l")
+				// cmd := exec.Command("/proc/self/exe")
+				// cmd.Stdin = os.Stdin
+				// cmd.Stdout = os.Stdout
+				// cmd.Stderr = os.Stderr
+
+				// if err := cmd.Run(); err != nil {
+				// 	logger.Log(err.Error())
+				// }
+			} else {
+				uids, err := process.Uids()
+				if err != nil {
+					logger.Log(err.Error())
+					return err
+				}
+				gids, err := process.Gids()
+				if err != nil {
+					logger.Log(err.Error())
+					return err
+				}
+				newUid := int(uids[0])
+				newGid := int(gids[0])
+				if newGid != gid {
+					syscall.Setgid(newUid)
+				}
+				if newUid != uid {
+					syscall.Setuid(newUid)
+				}
+				attachJava(pid, pid)
+				if newGid != gid {
+					syscall.Setgid(gid)
+				}
+				if newUid != uid {
+					syscall.Setuid(uid)
 				}
 			}
-			uids, err := process.Uids()
-			if err != nil {
-				logger.Log(err.Error())
-				return err
-			}
-			gids, err := process.Gids()
-			if err != nil {
-				logger.Log(err.Error())
-				return err
-			}
-			newUid := int(uids[0])
-			newGid := int(gids[0])
-			if newGid != gid {
-				syscall.Setgid(newUid)
-			}
-			if newUid != uid {
-				syscall.Setuid(newUid)
-			}
-			attachJava(pid, pid)
-			if newGid != gid {
-				syscall.Setgid(gid)
-			}
-			if newUid != uid {
-				syscall.Setuid(uid)
-			}
-
 		}
 	}
 	return nil
 }
 
-func callJavaAttach(pid int, command string, params string) {
-	result := C.jattach(C.int(pid), C.CString(command), C.CString(params), C.int(1))
-	fmt.Println("Result:", int(result))
+func callJavaAttach(pid int, command string, params string) error {
+	var byteArray *C.uchar
+	var length C.size_t
+	result := C.jattach(&byteArray, &length, C.int(pid), C.CString(command), C.CString(params), C.int(1))
+	if result == 0 {
+		goByteArray := C.GoBytes(unsafe.Pointer(byteArray), C.int(length))
+		logger.Log("INFO", goByteArray)
+		C.free(unsafe.Pointer(byteArray))
+	}
+	return nil
 }
 
 /*
@@ -222,7 +233,7 @@ func loadAgentLibrary(conn net.Conn, agentLibrary string, isAbs bool, options st
 		responseMessage := string(bytes)
 		msgPrefix := "return code: "
 		if responseMessage == "" {
-			return errors.New("Target VM did not respond")
+			return errors.New("target VM did not respond")
 		} else if strings.HasPrefix(responseMessage, msgPrefix) {
 			retCode, err := strconv.Atoi(strings.TrimSpace(responseMessage[len(msgPrefix):]))
 			if err != nil {

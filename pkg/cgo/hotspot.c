@@ -122,7 +122,8 @@ static int connect_socket(int pid) {
 
 
 // Mirror response from remote JVM to stdout
-static int read_response_hotspot(int fd, char * command, char* arguments, int print_output) {
+static int read_response_hotspot(int fd, char * command, char* arguments, int print_output,
+    unsigned char** byteArray, size_t* length) {
     char buf[8192];
     ssize_t bytes = read(fd, buf, sizeof(buf) - 1);
     if (bytes == 0) {
@@ -149,24 +150,26 @@ static int read_response_hotspot(int fd, char * command, char* arguments, int pr
         buf[bytes] = 0;
         result = atoi(strncmp(buf + 2, "return code: ", 13) == 0 ? buf + 15 : buf + 2);
     }
-
-    if (print_output) {
-        // Mirror JVM response to stdout
-        printf("JVM response code = ");
+    else{
+        // Mirror JVM response to result
+        
         do {
             fwrite(buf, 1, bytes, stdout);
             bytes = read(fd, buf, sizeof(buf));
         } while (bytes > 0);
         printf("\n");
     }
-
+    *length = 8192;
+    *byteArray = (unsigned char*)malloc(*length * sizeof(unsigned char));
+    memcpy(*byteArray, buf, *length);
     return result;
 }
 
 
 
 
-int jattach_hotspot(int pid, int nspid, char * command, char* arguments, int print_output,int mnt_changed) {
+int jattach_hotspot(int pid, int nspid, char * command, char* arguments, int print_output,
+    int mnt_changed,unsigned char** byteArray, size_t* length) {
     if (check_socket(nspid) != 0 && start_attach_mechanism(pid, nspid,mnt_changed) != 0) {
         perror("Could not start attach mechanism");
         return 1;
@@ -188,7 +191,7 @@ int jattach_hotspot(int pid, int nspid, char * command, char* arguments, int pri
         return 1;
     }
 
-    int result = read_response_hotspot(fd, command, arguments, print_output);
+    int result = read_response_hotspot(fd, command, arguments, print_output,byteArray,length);
     close(fd);
 
     return result;
