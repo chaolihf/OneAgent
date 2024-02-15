@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#define __USE_GNU
 #include <errno.h>
 #include <sched.h>
 #include <stdio.h>
@@ -7,6 +8,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+/**
+ * 进入命名空间并执行命令
+*/
 __attribute__((constructor)) void enter_namespace(void) {
     char *mydocker_pid;
     mydocker_pid = getenv("mydocker_pid");

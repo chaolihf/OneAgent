@@ -2,6 +2,7 @@ package collector
 
 /*
 #include "cgo/jattach.c"
+#include "cgo/setNamespace.c"
 */
 import "C"
 
@@ -79,18 +80,9 @@ func ScanAllProcess() error {
 				if err != nil {
 					logger.Log(err.Error())
 					continue
+				} else {
+					logger.Log("INFO", content)
 				}
-				// os.Setenv("mydocker_pid", strconv.Itoa(int(pid)))
-				// os.Setenv("mydocker_cmd", fmt.Sprintf("/OneAgent --cmd=java --p0=threaddump --p1=%d --p2=%d", pid, nsPid))
-				// //os.Setenv("mydocker_cmd", "ls -l")
-				// cmd := exec.Command("/proc/self/exe")
-				// cmd.Stdin = os.Stdin
-				// cmd.Stdout = os.Stdout
-				// cmd.Stderr = os.Stderr
-
-				// if err := cmd.Run(); err != nil {
-				// 	logger.Log(err.Error())
-				// }
 			} else {
 				uids, err := process.Uids()
 				if err != nil {
