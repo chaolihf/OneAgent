@@ -12,7 +12,9 @@
         "psutil.h": "c",
         "syscall.h": "c",
         "un.h": "c",
-        "sockaddr.h": "c"
+        "sockaddr.h": "c",
+        "string.h": "c",
+        "common.h": "c"
     },
     "cmake.configureOnOpen": false
 }

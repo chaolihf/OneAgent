@@ -1,23 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-/**
- * 定义一个缓存字符数组长度和指针的节点
-*/
-struct OutputNode {
-    int size;
-    char* buffer;
-    struct OutputNode* next;
-}  ;
-
-/**
- * 通过一个队列来缓存所有的字符数组，这样在最后可以拼接起来复制成一个字符数组
-*/
-struct OutputQueue {
-    struct OutputNode* firstNode;
-    struct OutputNode* endNode;
-    int allSize;
-};
+#include "common.h"
 
 struct OutputQueue* initOutputQueue(){
     struct OutputQueue *queue=malloc(sizeof(struct OutputQueue));
@@ -47,15 +30,24 @@ void addOutputNode(struct OutputQueue *queue,int size,char* buffer){
 /**
  * 输出所有的数组
 */
-void output(struct OutputQueue *queue,unsigned char** byteArray, size_t* length){
-    *length = queue->allSize;
-    *byteArray = (unsigned char*)malloc(*length * sizeof(unsigned char));
-    char result[queue->allSize];
+void output(struct OutputQueue *queue,OutputInfo *result){
+    result->size= queue->allSize;
+    char *byteArray = (char*)malloc(result->size * sizeof(char));
+    result->output=byteArray;
     struct OutputNode *node=queue->firstNode;
-    int offset=0;
     while(node!=NULL){
-        memcpy(&result[offset], node->buffer, node->size);
-        offset+=node->size;
+        memcpy(byteArray, node->buffer, node->size);
+        byteArray+=node->size;
         node=node->next;
     }
+}
+
+void freeQueue(struct OutputQueue *queue){
+    struct OutputNode *node=queue->firstNode;
+    while(node!=NULL){
+        struct OutputNode *waitToFreeNode=node;
+        node=node->next;
+        free(waitToFreeNode);
+    }
+    free(queue);
 }

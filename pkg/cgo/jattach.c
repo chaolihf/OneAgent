@@ -23,15 +23,8 @@
 
 char tmp_path[MAX_PATH - 100];
 
-int jattach(unsigned char** byteArray, size_t* length,int pid, char * command, char* arguments, int print_output) {
-    struct OutputQueue *queue=initOutputQueue();
-    addOutputNode(queue,sizeof("hello"),"hello");
-    addOutputNode(queue,sizeof("world"),"world");
-    int size;
-    char** result;
-    output(queue,&result,&size);
-    printf("%s",result);
-
+int jattach(OutputInfo *outputInfo,int pid, char * command, char* arguments, int print_output) {
+    //OutputInfo *outputInfo=malloc(sizeof(OutputInfo));
     printf("jattach %s %s\n",command,arguments);
     uid_t my_uid = geteuid();
     gid_t my_gid = getegid();
@@ -63,8 +56,8 @@ int jattach(unsigned char** byteArray, size_t* length,int pid, char * command, c
     if (is_openj9_process(nspid)) {
         //return jattach_openj9(pid, nspid, argc, argv, print_output);
     } else {
-        jattach_hotspot(pid, nspid, command, arguments, print_output,mnt_changed,byteArray,length);
-        return 0;    
+        jattach_hotspot(pid, nspid, command, arguments, print_output,mnt_changed,outputInfo);
+        return 0;
     }
     return 1;
 }

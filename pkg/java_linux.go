@@ -75,7 +75,7 @@ func ScanAllProcess() error {
 				continue
 			}
 			if nsPid > 0 && pid != int(nsPid) {
-				err := callJavaAttach(pid, "threaddump", "")
+				content, err := callJavaAttach(pid, "threaddump", "")
 				if err != nil {
 					logger.Log(err.Error())
 					continue
@@ -123,16 +123,15 @@ func ScanAllProcess() error {
 	return nil
 }
 
-func callJavaAttach(pid int, command string, params string) error {
-	var byteArray *C.uchar
-	var length C.size_t
-	result := C.jattach(&byteArray, &length, C.int(pid), C.CString(command), C.CString(params), C.int(1))
+func callJavaAttach(pid int, command string, params string) (string, error) {
+	var outputInfo C.struct_OutputInfo
+	result := C.jattach(&outputInfo, C.int(pid), C.CString(command), C.CString(params), C.int(1))
 	if result == 0 {
-		goByteArray := C.GoBytes(unsafe.Pointer(byteArray), C.int(length))
-		logger.Log("INFO", goByteArray)
-		C.free(unsafe.Pointer(byteArray))
+		output := C.GoString(outputInfo.output)
+		C.free(unsafe.Pointer(outputInfo.output))
+		return output, nil
 	}
-	return nil
+	return "", errors.New("error")
 }
 
 /*

@@ -16,6 +16,7 @@
 #include <netinet/in.h>
 #include <sys/file.h>
 #include <errno.h>
+#include "common.h"
 
 // Send command with arguments to socket
 static int write_command_hotspot(int fd, char * command, char* arguments) {
@@ -123,25 +124,31 @@ static int connect_socket(int pid) {
 
 // Mirror response from remote JVM to stdout
 static int read_response_hotspot(int fd, char * command, char* arguments, int print_output,
-    unsigned char** byteArray, size_t* length) {
-    char buf[8192];
-    ssize_t bytes = read(fd, buf, sizeof(buf) - 1);
+    OutputInfo *outputInfo) {
+    int bufferSize=8192;
+    char* buf=malloc(bufferSize);
+    ssize_t bytes = read(fd, buf, bufferSize - 1);
     if (bytes == 0) {
         fprintf(stderr, "Unexpected EOF reading response\n");
+        free(buf);
         return 1;
     } else if (bytes < 0) {
         perror("Error reading response");
+        free(buf);
         return 1;
     }
-
     // First line of response is the command result code
     buf[bytes] = 0;
     int result = atoi(buf);
-
+    if( result!=0) {
+        free(buf);
+        return result;
+    }
+    struct OutputQueue *queue=initOutputQueue();
     // Special treatment of 'load' command
-    if (result == 0 && strcmp(command, "load") == 0) {
+    if (strcmp(command, "load") == 0) {
         size_t total = bytes;
-        while (total < sizeof(buf) - 1 && (bytes = read(fd, buf + total, sizeof(buf) - 1 - total)) > 0) {
+        while (total < bufferSize - 1 && (bytes = read(fd, buf + total, bufferSize - 1 - total)) > 0) {
             total += (size_t)bytes;
         }
         bytes = total;
@@ -152,16 +159,15 @@ static int read_response_hotspot(int fd, char * command, char* arguments, int pr
     }
     else{
         // Mirror JVM response to result
-        
         do {
-            fwrite(buf, 1, bytes, stdout);
-            bytes = read(fd, buf, sizeof(buf));
+            addOutputNode(queue,bytes,buf);
+            buf=malloc(bufferSize);
+            bytes = read(fd, buf, bufferSize);
         } while (bytes > 0);
         printf("\n");
+        output(queue,outputInfo);
     }
-    *length = 8192;
-    *byteArray = (unsigned char*)malloc(*length * sizeof(unsigned char));
-    memcpy(*byteArray, buf, *length);
+    freeQueue(queue);
     return result;
 }
 
@@ -169,7 +175,7 @@ static int read_response_hotspot(int fd, char * command, char* arguments, int pr
 
 
 int jattach_hotspot(int pid, int nspid, char * command, char* arguments, int print_output,
-    int mnt_changed,unsigned char** byteArray, size_t* length) {
+    int mnt_changed,OutputInfo *outputInfo) {
     if (check_socket(nspid) != 0 && start_attach_mechanism(pid, nspid,mnt_changed) != 0) {
         perror("Could not start attach mechanism");
         return 1;
@@ -191,7 +197,7 @@ int jattach_hotspot(int pid, int nspid, char * command, char* arguments, int pri
         return 1;
     }
 
-    int result = read_response_hotspot(fd, command, arguments, print_output,byteArray,length);
+    int result = read_response_hotspot(fd, command, arguments, print_output,outputInfo);
     close(fd);
 
     return result;
