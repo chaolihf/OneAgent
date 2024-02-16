@@ -1,6 +1,8 @@
 module com.chinatelecom.oneops.exporter/OneAgent
 
-go 1.19
+go 1.21.0
+
+toolchain go1.21.6
 
 require (
 	github.com/chaolihf/udpgo v0.0.13
@@ -27,6 +29,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chaolihf/gopsutil v0.0.7 // indirect
+	github.com/cilium/ebpf v0.13.0 // indirect
 	github.com/containerd/cgroups v1.1.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

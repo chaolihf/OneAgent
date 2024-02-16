@@ -91,6 +91,15 @@
                 }
             ],
             "preLaunchTask": "buildJattach"
+        },
+        {
+            "name": "EBPF测试",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/pkg/ebpf/",
+            "cwd": "${workspaceFolder}/pkg/ebpf",
+            "args": []
         }
     ]
 }

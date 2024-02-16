@@ -14,7 +14,8 @@
         "un.h": "c",
         "sockaddr.h": "c",
         "string.h": "c",
-        "common.h": "c"
+        "common.h": "c",
+        "bpf_helpers.h": "c"
     },
     "cmake.configureOnOpen": false
 }
