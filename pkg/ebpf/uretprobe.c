@@ -50,3 +50,10 @@ int count_packets() {
     return XDP_PASS; 
 }
 
+SEC("kprobe/sys_execve")
+int helloWorld(void *context){
+    char message[]="hello world";
+    bpf_trace_printk(message,sizeof(message));
+    return 0;
+}
+

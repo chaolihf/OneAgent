@@ -22,7 +22,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target amd64 -type event bpf uretprobe.c -- -I ./headers
+//go:generate sh -c "env BPF2GO_FLAGS=\"-O2 -g -Wall\" go run github.com/cilium/ebpf/cmd/bpf2go -target amd64 -type event bpf uretprobe.c -- -I ./headers"
 
 const (
 	// The path to the ELF binary containing the function to trace.
@@ -71,14 +71,14 @@ func main() {
 	}
 
 	// Attach count_packets to the network interface.
-	link, err := link.AttachXDP(link.XDPOptions{
+	xdpLink, err := link.AttachXDP(link.XDPOptions{
 		Program:   objs.CountPackets,
 		Interface: iface.Index,
 	})
 	if err != nil {
 		log.Fatal("Attaching XDP:", err)
 	}
-	defer link.Close()
+	defer xdpLink.Close()
 
 	log.Printf("Counting incoming packets on %s..", ifname)
 
@@ -107,6 +107,15 @@ func main() {
 		}
 	}()
 
+	/*
+		处理kprobe事件
+	*/
+	kp, err := link.Kprobe("sys_execve", objs.HelloWorld, nil)
+	if err != nil {
+		log.Fatalf("opening kprobe: %s", err)
+	}
+	defer kp.Close()
+
 	go func() {
 		for {
 			select {
@@ -117,6 +126,7 @@ func main() {
 					log.Fatal("Map lookup:", err)
 				}
 				log.Printf("Received %d packets", count)
+
 			case <-stop:
 				log.Print("Received signal, exiting..")
 				return
