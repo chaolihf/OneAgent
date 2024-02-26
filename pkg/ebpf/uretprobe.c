@@ -1,8 +1,11 @@
 //go:build ignore
 
-#include "common.h"
+//#include "common.h"
+#include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include "bpf_tracing.h"
+//#include <linux/fs.h>
+//#include <linux/sched.h>
 
 char __license[] SEC("license") = "Dual MIT/GPL";
 
@@ -17,6 +20,8 @@ struct {
 
 // Force emitting struct event into the ELF.
 const struct event *unused __attribute__((unused));
+
+
 
 SEC("uretprobe/bash_readline")
 int uretprobe_bash_readline(struct pt_regs *ctx) {
@@ -57,3 +62,67 @@ int helloWorld(void *context){
     return 0;
 }
 
+
+#define TASK_COMM_LEN 256
+#define DNAME_INLINE_LEN 256
+struct fileEvent {
+    u32 pid;
+    u8 comm[TASK_COMM_LEN];
+    u8 filename[DNAME_INLINE_LEN];
+};
+
+struct {
+	__uint(type, BPF_MAP_TYPE_RINGBUF);
+	__uint(max_entries, 1 << 24);
+} fileEvents SEC(".maps");
+
+// Force emitting struct fileEvent into the ELF.
+const struct fileEvent *useFileEventForGo __attribute__((unused));
+
+
+
+// SEC("kprobe/vfs_create")
+// int trace_create(struct pt_regs *ctx, struct mnt_idmap *idmap,
+//         struct inode *dir, struct dentry *dentry){
+//     struct fileEvent *fileEventInfo;
+//     fileEventInfo = bpf_ringbuf_reserve(&fileEvents, sizeof(struct fileEvent), 0);
+//     if (!fileEventInfo) {
+// 		return 0;
+// 	}
+//     fileEventInfo->pid = bpf_get_current_pid_tgid() >> 32;
+//     bpf_get_current_comm(&fileEventInfo->comm, sizeof(fileEventInfo->comm));
+//     bpf_probe_read_kernel(&fileEventInfo->filename, sizeof(fileEventInfo->filename), 
+//         (void *)dentry->d_name.name);
+    
+    
+//     bpf_ringbuf_submit(fileEventInfo, 0);
+
+
+//     return 0;
+// }
+
+
+SEC("kprobe/vfs_create")
+int trace_create(struct pt_regs *ctx)
+{
+    u64 pid = bpf_get_current_pid_tgid();
+    struct path *p = (struct path*)PT_REGS_PARM1(ctx);
+    struct dentry *de;
+    bpf_probe_read_kernel(&de,sizeof(void*),&p->dentry);
+    struct qstr d_name;
+    bpf_probe_read_kernel(&d_name,sizeof(d_name),&de->d_name);
+    char filename[32];
+    bpf_probe_read_kernel(&filename,sizeof(filename),d_name.name);
+    if (d_name.len == 0)
+        return 0;
+    char fmt_str[] = "path:%s";
+    bpf_trace_printk(fmt_str,sizeof(fmt_str),filename);
+    struct fileEvent *fileEventInfo;
+    fileEventInfo = bpf_ringbuf_reserve(&fileEvents, sizeof(struct fileEvent), 0);
+    if (!fileEventInfo) {
+		return 0;
+	}
+    fileEventInfo->pid = bpf_get_current_pid_tgid() >> 32;
+    bpf_ringbuf_submit(fileEventInfo, 0);
+    return 0;
+};
