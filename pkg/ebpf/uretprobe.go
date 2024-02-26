@@ -145,12 +145,13 @@ func main() {
 
 	/*
 	   增加vfs相关绑定
+	   # newer kernels may don't fire vfs_create, call vfs_open instead:
 	*/
-	kpCreate, err := link.Kprobe("vfs_create", objs.TraceCreate, nil)
+	kpOpenOrCreate, err := link.Kprobe("vfs_open", objs.TraceVfsOpen, nil)
 	if err != nil {
-		log.Fatalf("opening kprobe vfs create : %s", err)
+		log.Fatalf("opening kprobe vfs open : %s", err)
 	}
-	defer kpCreate.Close()
+	defer kpOpenOrCreate.Close()
 	// Open a ringbuf reader from userspace RINGBUF map described in the
 	// eBPF C program.
 	fileRingReader, err := ringbuf.NewReader(objs.FileEvents)
@@ -179,7 +180,7 @@ func main() {
 			continue
 		}
 
-		log.Printf("pid: %d\tcomm: %s\n", fileEvent.Pid, unix.ByteSliceToString(fileEvent.Filename[:]))
+		log.Printf("pid: %d\tfileName: %s\n", fileEvent.Pid, unix.ByteSliceToString(fileEvent.Filename[:]))
 	}
 
 	//开始处理perf event 事件

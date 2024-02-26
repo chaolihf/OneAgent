@@ -63,7 +63,6 @@ int helloWorld(void *context){
 }
 
 
-#define TASK_COMM_LEN 256
 #define DNAME_INLINE_LEN 256
 struct fileEvent {
     u32 pid;
@@ -102,10 +101,10 @@ const struct fileEvent *useFileEventForGo __attribute__((unused));
 // }
 
 
-SEC("kprobe/vfs_create")
-int trace_create(struct pt_regs *ctx)
+SEC("kprobe/vfs_open")
+int trace_vfs_open(struct pt_regs *ctx)
 {
-    u64 pid = bpf_get_current_pid_tgid();
+    
     struct path *p = (struct path*)PT_REGS_PARM1(ctx);
     struct dentry *de;
     bpf_probe_read_kernel(&de,sizeof(void*),&p->dentry);
@@ -115,14 +114,15 @@ int trace_create(struct pt_regs *ctx)
     bpf_probe_read_kernel(&filename,sizeof(filename),d_name.name);
     if (d_name.len == 0)
         return 0;
-    char fmt_str[] = "path:%s";
-    bpf_trace_printk(fmt_str,sizeof(fmt_str),filename);
+    u64 pid = bpf_get_current_pid_tgid();
     struct fileEvent *fileEventInfo;
     fileEventInfo = bpf_ringbuf_reserve(&fileEvents, sizeof(struct fileEvent), 0);
     if (!fileEventInfo) {
 		return 0;
 	}
-    fileEventInfo->pid = bpf_get_current_pid_tgid() >> 32;
+    fileEventInfo->pid = pid;
+    bpf_get_current_comm(&fileEventInfo->comm, TASK_COMM_LEN);
+    bpf_probe_read(&fileEventInfo->filename,sizeof(&fileEventInfo->filename),filename);
     bpf_ringbuf_submit(fileEventInfo, 0);
     return 0;
 };
