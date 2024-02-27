@@ -153,6 +153,7 @@ const struct fileEvent *useFileEventForGo __attribute__((unused));
 
 //重写变量值
 volatile const u64 latency_thresh=0;
+#define FMODE_CREATED	0x100000
 
 SEC("kprobe/vfs_open")
 int trace_vfs_open(struct pt_regs *ctx)
@@ -163,7 +164,15 @@ int trace_vfs_open(struct pt_regs *ctx)
     // 一行语句就实现了链式的读取
     struct path *p = (struct path*)PT_REGS_PARM1(ctx);
 	filename = BPF_CORE_READ(p,dentry,d_name.name);
-	bpf_printk("KPROBE ENTRY pid = %d, filename = %s , rewrite value=%d\n", pid, filename,latency_thresh);
+
+    struct file *f=(struct file*)PT_REGS_PARM2(ctx);
+	int fmode = BPF_CORE_READ(f, f_mode);
+
+	if (!(fmode & FMODE_CREATED))
+		return 0;
+    bpf_printk("KPROBE ENTRY pid = %d, filename = %s , rewrite value=%d\n", pid, filename,latency_thresh);
+    
+    
     // u64 pid = bpf_get_current_pid_tgid();
     // struct fileEvent *fileEventInfo;
     // fileEventInfo = bpf_ringbuf_reserve(&fileEvents, sizeof(struct fileEvent), 0);
