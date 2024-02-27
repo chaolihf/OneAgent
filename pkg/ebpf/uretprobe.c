@@ -151,37 +151,70 @@ const struct fileEvent *useFileEventForGo __attribute__((unused));
 // 	return 0;
 // }
 
-//重写变量值
-volatile const u64 latency_thresh=0;
-#define FMODE_CREATED	0x100000
+//重写变量值，0x100000对应的是文件创建模式，可以在启动时修改其他值来实现对不同模式的指定
+volatile const u64 catchFileMode=0x100000;
+/**
+ * 如何知道参数的类型和数据，如vfs_open函数，可以查找
+ * https://github.com/torvalds/linux/blob/45ec2f5f6ed3ec3a79ba1329ad585497cdcbe663/fs/open.c#L1084
+ * 原型为
+ * int vfs_open(const struct path *path, struct file *file)
+ * 这样就可以通过PT_REGS_PARM1来获取path数据，PT_REGS_PARM2获取file参数
+*/
+// SEC("kprobe/vfs_open")
+// int trace_vfs_open(struct pt_regs *ctx)
+// {
+// 	pid_t pid;
+// 	pid = bpf_get_current_pid_tgid() >> 32;
+// 	const unsigned char *filename;
+//     // 一行语句就实现了链式的读取
+//     struct path *p = (struct path*)PT_REGS_PARM1(ctx);
+// 	filename = BPF_CORE_READ(p,dentry,d_name.name);
 
+//     struct file *f=(struct file*)PT_REGS_PARM2(ctx);
+// 	int fmode = BPF_CORE_READ(f, f_mode);
+
+// 	if (!(fmode & FMODE_CREATED))
+// 		return 0;
+//     bpf_printk("KPROBE ENTRY pid = %d, filename = %s , rewrite value=%d\n", pid, filename,latency_thresh);
+    
+    
+//     // u64 pid = bpf_get_current_pid_tgid();
+//     // struct fileEvent *fileEventInfo;
+//     // fileEventInfo = bpf_ringbuf_reserve(&fileEvents, sizeof(struct fileEvent), 0);
+//     // if (!fileEventInfo) {
+// 	// 	return 0;
+// 	// }
+//     // fileEventInfo->pid = pid;
+//     // bpf_get_current_comm(&fileEventInfo->comm, TASK_COMM_LEN);
+//     // bpf_probe_read(&fileEventInfo->filename,sizeof(&fileEventInfo->filename),filename);
+//     // bpf_ringbuf_submit(fileEventInfo, 0);
+// 	return 0;
+// }
+
+/*
+   product version
+*/
 SEC("kprobe/vfs_open")
 int trace_vfs_open(struct pt_regs *ctx)
 {
-	pid_t pid;
-	pid = bpf_get_current_pid_tgid() >> 32;
 	const unsigned char *filename;
-    // 一行语句就实现了链式的读取
     struct path *p = (struct path*)PT_REGS_PARM1(ctx);
 	filename = BPF_CORE_READ(p,dentry,d_name.name);
-
     struct file *f=(struct file*)PT_REGS_PARM2(ctx);
 	int fmode = BPF_CORE_READ(f, f_mode);
 
-	if (!(fmode & FMODE_CREATED))
+	if (!(fmode & catchFileMode))
 		return 0;
-    bpf_printk("KPROBE ENTRY pid = %d, filename = %s , rewrite value=%d\n", pid, filename,latency_thresh);
     
-    
-    // u64 pid = bpf_get_current_pid_tgid();
-    // struct fileEvent *fileEventInfo;
-    // fileEventInfo = bpf_ringbuf_reserve(&fileEvents, sizeof(struct fileEvent), 0);
-    // if (!fileEventInfo) {
-	// 	return 0;
-	// }
-    // fileEventInfo->pid = pid;
-    // bpf_get_current_comm(&fileEventInfo->comm, TASK_COMM_LEN);
-    // bpf_probe_read(&fileEventInfo->filename,sizeof(&fileEventInfo->filename),filename);
-    // bpf_ringbuf_submit(fileEventInfo, 0);
+    u64 pid = bpf_get_current_pid_tgid();
+    struct fileEvent *fileEventInfo;
+    fileEventInfo = bpf_ringbuf_reserve(&fileEvents, sizeof(struct fileEvent), 0);
+    if (!fileEventInfo) {
+		return 0;
+	}
+    fileEventInfo->pid = pid;
+    bpf_get_current_comm(&fileEventInfo->comm, TASK_COMM_LEN);
+    bpf_probe_read(&fileEventInfo->filename,sizeof(&fileEventInfo->filename),filename);
+    bpf_ringbuf_submit(fileEventInfo, 0);
 	return 0;
 }

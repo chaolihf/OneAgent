@@ -52,7 +52,7 @@ func main() {
 		log.Fatalf("load bpf error %v", err)
 	}
 	consts := map[string]interface{}{
-		"latency_thresh": time.Millisecond.Nanoseconds(),
+		"catchFileMode": uint64(0x100000),
 	}
 	if err = spec.RewriteConstants(consts); err != nil {
 		log.Fatalf("RewriteConstants error:%v", err)
