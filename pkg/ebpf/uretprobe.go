@@ -47,9 +47,20 @@ func main() {
 		log.Fatal(err)
 	}
 
+	spec, err := loadBpf()
+	if err != nil {
+		log.Fatalf("load bpf error %v", err)
+	}
+	consts := map[string]interface{}{
+		"latency_thresh": time.Millisecond.Nanoseconds(),
+	}
+	if err = spec.RewriteConstants(consts); err != nil {
+		log.Fatalf("RewriteConstants error:%v", err)
+	}
+
 	// Load pre-compiled programs and maps into the kernel.
 	objs := bpfObjects{}
-	if err := loadBpfObjects(&objs, nil); err != nil {
+	if err := spec.LoadAndAssign(&objs, nil); err != nil {
 		var ve *ebpf.VerifierError
 		// 输出校验日志，
 		if errors.As(err, &ve) {
@@ -159,6 +170,16 @@ func main() {
 		log.Fatalf("opening ringbuf reader: %s", err)
 	}
 	defer fileRingReader.Close()
+
+	// Close the reader when the process receives a signal, which will exit
+	// the read loop.
+	go func() {
+		<-stopper
+
+		if err := fileRingReader.Close(); err != nil {
+			log.Fatalf("closing ringbuf reader: %s", err)
+		}
+	}()
 
 	log.Printf("Listening for file create ring buffer events..")
 

@@ -3,6 +3,7 @@
 //#include "common.h"
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
+#include <bpf/bpf_core_read.h>
 #include "bpf_tracing.h"
 //#include <linux/fs.h>
 //#include <linux/sched.h>
@@ -101,28 +102,77 @@ const struct fileEvent *useFileEventForGo __attribute__((unused));
 // }
 
 
+// SEC("kprobe/vfs_open")
+// int trace_vfs_open(struct pt_regs *ctx)
+// {
+    
+//     struct path *p = (struct path*)PT_REGS_PARM1(ctx);
+//     struct dentry *de;
+//     bpf_probe_read_kernel(&de,sizeof(void*),&p->dentry);
+//     struct qstr d_name;
+//     bpf_probe_read_kernel(&d_name,sizeof(d_name),&de->d_name);
+//     char filename[32];
+//     bpf_probe_read_kernel(&filename,sizeof(filename),d_name.name);
+//     if (d_name.len == 0)
+//         return 0;
+//     u64 pid = bpf_get_current_pid_tgid();
+//     struct fileEvent *fileEventInfo;
+//     fileEventInfo = bpf_ringbuf_reserve(&fileEvents, sizeof(struct fileEvent), 0);
+//     if (!fileEventInfo) {
+// 		return 0;
+// 	}
+//     fileEventInfo->pid = pid;
+//     bpf_get_current_comm(&fileEventInfo->comm, TASK_COMM_LEN);
+//     bpf_probe_read(&fileEventInfo->filename,sizeof(&fileEventInfo->filename),filename);
+//     bpf_ringbuf_submit(fileEventInfo, 0);
+//     return 0;
+// };
+
+
+// SEC("kprobe/vfs_open")
+// int BPF_KPROBE(vfs_open,const struct path *path, struct file *file)
+// {
+// 	pid_t pid;
+// 	pid = bpf_get_current_pid_tgid() >> 32;
+// 	const unsigned char *filename;
+//     // 一行语句就实现了链式的读取
+// 	filename = BPF_CORE_READ(path,dentry,d_name.name);
+// 	bpf_printk("KPROBE ENTRY pid = %d, filename = %s\n", pid, filename);
+//     // u64 pid = bpf_get_current_pid_tgid();
+//     // struct fileEvent *fileEventInfo;
+//     // fileEventInfo = bpf_ringbuf_reserve(&fileEvents, sizeof(struct fileEvent), 0);
+//     // if (!fileEventInfo) {
+// 	// 	return 0;
+// 	// }
+//     // fileEventInfo->pid = pid;
+//     // bpf_get_current_comm(&fileEventInfo->comm, TASK_COMM_LEN);
+//     // bpf_probe_read(&fileEventInfo->filename,sizeof(&fileEventInfo->filename),filename);
+//     // bpf_ringbuf_submit(fileEventInfo, 0);
+// 	return 0;
+// }
+
+//重写变量值
+volatile const u64 latency_thresh=0;
+
 SEC("kprobe/vfs_open")
 int trace_vfs_open(struct pt_regs *ctx)
 {
-    
+	pid_t pid;
+	pid = bpf_get_current_pid_tgid() >> 32;
+	const unsigned char *filename;
+    // 一行语句就实现了链式的读取
     struct path *p = (struct path*)PT_REGS_PARM1(ctx);
-    struct dentry *de;
-    bpf_probe_read_kernel(&de,sizeof(void*),&p->dentry);
-    struct qstr d_name;
-    bpf_probe_read_kernel(&d_name,sizeof(d_name),&de->d_name);
-    char filename[32];
-    bpf_probe_read_kernel(&filename,sizeof(filename),d_name.name);
-    if (d_name.len == 0)
-        return 0;
-    u64 pid = bpf_get_current_pid_tgid();
-    struct fileEvent *fileEventInfo;
-    fileEventInfo = bpf_ringbuf_reserve(&fileEvents, sizeof(struct fileEvent), 0);
-    if (!fileEventInfo) {
-		return 0;
-	}
-    fileEventInfo->pid = pid;
-    bpf_get_current_comm(&fileEventInfo->comm, TASK_COMM_LEN);
-    bpf_probe_read(&fileEventInfo->filename,sizeof(&fileEventInfo->filename),filename);
-    bpf_ringbuf_submit(fileEventInfo, 0);
-    return 0;
-};
+	filename = BPF_CORE_READ(p,dentry,d_name.name);
+	bpf_printk("KPROBE ENTRY pid = %d, filename = %s , rewrite value=%d\n", pid, filename,latency_thresh);
+    // u64 pid = bpf_get_current_pid_tgid();
+    // struct fileEvent *fileEventInfo;
+    // fileEventInfo = bpf_ringbuf_reserve(&fileEvents, sizeof(struct fileEvent), 0);
+    // if (!fileEventInfo) {
+	// 	return 0;
+	// }
+    // fileEventInfo->pid = pid;
+    // bpf_get_current_comm(&fileEventInfo->comm, TASK_COMM_LEN);
+    // bpf_probe_read(&fileEventInfo->filename,sizeof(&fileEventInfo->filename),filename);
+    // bpf_ringbuf_submit(fileEventInfo, 0);
+	return 0;
+}

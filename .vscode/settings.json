@@ -15,7 +15,11 @@
         "sockaddr.h": "c",
         "string.h": "c",
         "common.h": "c",
-        "bpf_helpers.h": "c"
+        "bpf_helpers.h": "c",
+        "bpf_helper_defs.h": "c",
+        "fs.h": "c",
+        "vmlinux.h": "c",
+        "bpf_tracing.h": "c"
     },
     "cmake.configureOnOpen": false
 }
