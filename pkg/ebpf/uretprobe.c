@@ -69,6 +69,7 @@ struct fileEvent {
     u32 pid;
     u8 comm[TASK_COMM_LEN];
     u8 filename[DNAME_INLINE_LEN];
+    u64 mode;
 };
 
 struct {
@@ -192,6 +193,17 @@ volatile const u64 catchFileMode=0x100000;
 // }
 
 /*
+    通过这个结构来动态修改数据
+*/
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 128);
+    __type(key, u64);
+    __type(value, u64);
+} fileModeMap SEC(".maps");
+
+
+/*
    product version
 */
 SEC("kprobe/vfs_open")
@@ -202,8 +214,14 @@ int trace_vfs_open(struct pt_regs *ctx)
 	filename = BPF_CORE_READ(p,dentry,d_name.name);
     struct file *f=(struct file*)PT_REGS_PARM2(ctx);
 	int fmode = BPF_CORE_READ(f, f_mode);
-
-	if (!(fmode & catchFileMode))
+    u64 *v = NULL;
+    u64 *key=0;
+    v = bpf_map_lookup_elem(&fileModeMap, &key);
+    u64 mode=catchFileMode;
+    if (v != NULL) {
+        mode=*v;
+    }
+	if (!(fmode & mode))
 		return 0;
     
     u64 pid = bpf_get_current_pid_tgid();
@@ -213,6 +231,7 @@ int trace_vfs_open(struct pt_regs *ctx)
 		return 0;
 	}
     fileEventInfo->pid = pid;
+    fileEventInfo->mode=mode;
     bpf_get_current_comm(&fileEventInfo->comm, TASK_COMM_LEN);
     bpf_probe_read(&fileEventInfo->filename,sizeof(&fileEventInfo->filename),filename);
     bpf_ringbuf_submit(fileEventInfo, 0);

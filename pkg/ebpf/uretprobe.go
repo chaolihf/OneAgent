@@ -154,6 +154,10 @@ func main() {
 		}
 	}()
 
+	if err := objs.bpfMaps.FileModeMap.Put(uint64(0), uint64(0x300000)); err != nil {
+		log.Fatalf("init file mode map failed")
+	}
+
 	/*
 	   增加vfs相关绑定
 	   # newer kernels may don't fire vfs_create, call vfs_open instead:
@@ -201,7 +205,8 @@ func main() {
 			continue
 		}
 
-		log.Printf("pid: %d\tfileName: %s\n", fileEvent.Pid, unix.ByteSliceToString(fileEvent.Filename[:]))
+		log.Printf("pid: %d\tfileName: %s,mode:%d\n", fileEvent.Pid,
+			unix.ByteSliceToString(fileEvent.Filename[:]), fileEvent.Mode)
 	}
 
 	//开始处理perf event 事件
