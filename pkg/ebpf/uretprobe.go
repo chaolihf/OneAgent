@@ -7,6 +7,7 @@ package main
 
 import (
 	"bytes"
+	"debug/elf"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -22,6 +23,7 @@ import (
 	"github.com/cilium/ebpf/perf"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
+	"golang.org/x/arch/x86/x86asm"
 	"golang.org/x/sys/unix"
 )
 
@@ -39,6 +41,25 @@ const (
 )
 
 func main() {
+	go CountCC(1)
+	goElf, err := elf.Open("/usr/sbin/sshd")
+	goSymbols, err := goElf.Symbols()
+	goDynSymbols, err := goElf.DynamicSymbols()
+	goSymbols = append(goSymbols, goDynSymbols...)
+	for _, symbol := range goSymbols {
+		// if symbol.Name == "main.CountCC" {
+		// 	section := goElf.Sections[symbol.Section]
+		// 	elfText, _ := section.Data()
+		// 	start := symbol.Value - section.Addr
+		// 	end := start + symbol.Size
+		// 	instHex := elfText[start:end]
+		// 	decodeInstruction(instHex)
+
+		// 	break
+		// }
+		fmt.Println(symbol.Name)
+	}
+
 	stopper := make(chan os.Signal, 1)
 	signal.Notify(stopper, os.Interrupt, syscall.SIGTERM)
 
@@ -235,4 +256,59 @@ func main() {
 
 		log.Printf("%s:%s return value: %s", binPath, symbol, unix.ByteSliceToString(event.Line[:]))
 	}
+}
+
+//go:noinline
+func recursion(level, maxLevel int) int {
+	if level > maxLevel {
+		return level
+	}
+	return recursion(level+1, maxLevel)
+}
+
+//go:noinline
+func NewTestFunc() int {
+	//nothing
+	print("NewTestFunc\n")
+	return 100
+}
+
+// uretprobe挂载的目标函数
+//
+//go:noinline
+func CountCC(maxLevel int) (a int) {
+	a = NewTestFunc()
+	fmt.Println(a)
+	if a > 100 {
+		return a
+	}
+
+	a = recursion(0, maxLevel)
+	fmt.Printf("CountCC return :%d\n", a)
+	return a
+}
+
+// decodeInstruction Decode into assembly instructions and identify the RET instruction to return the offset.
+func decodeInstruction(instHex []byte) ([]int, error) {
+	var offsets []int
+	var s *bytes.Buffer
+	s = bytes.NewBufferString("")
+	for i := 0; i < len(instHex); {
+		inst, err := x86asm.Decode(instHex[i:], 64)
+		//fmt.Printf("%04X\t%s\n", i, inst.String())
+		//s.WriteString(inst.String())
+		s.WriteString(fmt.Sprintf("%04X\t%s", i, inst.String()))
+		s.WriteString("\n")
+		if err != nil {
+			return nil, err
+		}
+		if inst.Op == x86asm.RET {
+			offsets = append(offsets, i)
+		}
+		i += inst.Len
+	}
+
+	asmCode := s.String()
+	fmt.Println(asmCode)
+	return offsets, nil
 }
