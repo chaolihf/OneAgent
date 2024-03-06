@@ -17,6 +17,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"unsafe"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
@@ -28,7 +29,7 @@ import (
 )
 
 //export BPF2GO_FLAGS="-O2 -g -Wall"
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target amd64 -type event -type fileEvent bpf uretprobe.c -- -I ./headers
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target amd64 -type event -type fileEvent bpf uretprobe.c -- -I /usr/src/linux-headers-6.5.0-17-generic/tools/bpf/resolve_btfids/libbpf/include
 
 const (
 	// The path to the ELF binary containing the function to trace.
@@ -261,7 +262,7 @@ func main() {
 	}()
 
 	/*
-		测试demo
+		测试tracing
 	*/
 
 	enterLink, err := link.Tracepoint("syscalls", "sys_enter_read", objs.bpfPrograms.SysEnterRead, nil)
@@ -279,8 +280,48 @@ func main() {
 	defer enterLink.Close()
 	defer exitLink.Close()
 	defer acceptLink.Close()
-	time.Sleep(1000000 * time.Second)
 
+	/*
+		测试socket filter
+	*/
+	var linkIndex = 0
+	sock, err := openRawSock(linkIndex)
+	if err != nil {
+		panic(err)
+	}
+	defer syscall.Close(sock)
+	const SO_ATTACH_BPF = 50
+	if err := syscall.SetsockoptInt(sock, syscall.SOL_SOCKET, SO_ATTACH_BPF, objs.SocketHandler.FD()); err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Filtering on eth index: %d\n", linkIndex)
+	fmt.Println("Packet stats:")
+
+	time.Sleep(30 * time.Second)
+
+}
+
+func openRawSock(index int) (int, error) {
+	sock, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW|syscall.SOCK_NONBLOCK|syscall.SOCK_CLOEXEC, int(htons(syscall.ETH_P_ALL)))
+	if err != nil {
+		return 0, err
+	}
+	sll := syscall.SockaddrLinklayer{
+		Ifindex:  index,
+		Protocol: htons(syscall.ETH_P_ALL),
+	}
+	if err := syscall.Bind(sock, &sll); err != nil {
+		return 0, err
+	}
+	return sock, nil
+}
+
+// htons converts the unsigned short integer hostshort from host byte order to network byte order.
+func htons(i uint16) uint16 {
+	b := make([]byte, 2)
+	binary.BigEndian.PutUint16(b, i)
+	return *(*uint16)(unsafe.Pointer(&b[0]))
 }
 
 //go:noinline
