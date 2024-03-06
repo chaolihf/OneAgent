@@ -237,3 +237,84 @@ int trace_vfs_open(struct pt_regs *ctx)
     bpf_ringbuf_submit(fileEventInfo, 0);
 	return 0;
 }
+
+
+struct data_args_t
+{
+    __s32 fd;
+    uintptr_t buf;
+};
+
+struct
+{
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 4096);
+    __type(key, u64);
+    __type(value, struct data_args_t);
+} active_read_args_map SEC(".maps");
+
+
+static inline void process_data(struct trace_event_raw_sys_exit *ctx,
+                                u64 id, const struct data_args_t *args, u64 bytes_count)
+{
+    if (args->buf == 0)
+    {
+        return;
+    }
+    u32 pid = id >> 32;
+    u64 pid_fd = ((u64)pid << 32) | (u64)args->fd;
+    bpf_printk("pid %d read %d",pid,pid_fd);
+    return;
+}
+
+
+SEC("tracepoint/syscalls/sys_enter_read")
+int sys_enter_read(struct trace_event_raw_sys_enter *ctx)
+{
+    u64 id = bpf_get_current_pid_tgid();
+
+    struct data_args_t read_args = {};
+    read_args.fd = (int)BPF_CORE_READ(ctx, args[0]);
+    read_args.buf = (uintptr_t)BPF_CORE_READ(ctx, args[1]);
+    bpf_map_update_elem(&active_read_args_map, &id, &read_args, BPF_ANY);
+
+    return 0;
+}
+
+
+SEC("tracepoint/syscalls/sys_exit_read")
+int sys_exit_read(struct trace_event_raw_sys_exit *ctx)
+{
+    u64 bytes_count = (u64)BPF_CORE_READ(ctx, ret);
+    if (bytes_count <= 0)
+    {
+        return 0;
+    }
+    u64 id = bpf_get_current_pid_tgid();
+    struct data_args_t *read_args = bpf_map_lookup_elem(&active_read_args_map, &id);
+    if (read_args != NULL)
+    {
+        process_data(ctx, id, read_args, bytes_count);
+    }
+
+    bpf_map_delete_elem(&active_read_args_map, &id);
+
+    return 0;
+}
+
+struct accept_args_t
+{
+    struct sockaddr_in *addr;
+};
+
+
+SEC("tracepoint/syscalls/sys_enter_accept")
+int sys_enter_accept(struct trace_event_raw_sys_enter *ctx)
+{
+    u64 id = bpf_get_current_pid_tgid();
+
+    struct accept_args_t accept_args = {};
+    accept_args.addr = (struct sockaddr_in *)BPF_CORE_READ(ctx, args[1]);
+    bpf_printk("enter_accept accept_args.addr: %llx\n", accept_args.addr);
+    return 0;
+}
