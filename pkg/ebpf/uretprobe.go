@@ -333,12 +333,30 @@ func main() {
 				log.Printf("parsing socket ringbuf event: %s", err)
 				continue
 			}
-			log.Printf("http request from %d:%d to %d:%d , content:%s\n",
-				socketEvent.SrcAddr, socketEvent.Ports>>2, socketEvent.DstAddr, (socketEvent.Ports&0xff00)>>2,
+			portBytes := networkToHostOrder(socketEvent.Ports)
+			log.Printf("http request from %s:%d to %s:%d , content:%s\n",
+				uint32ToIPString(networkToHostOrder(socketEvent.SrcAddr)),
+				int(portBytes[0])*256+int(portBytes[1]),
+				uint32ToIPString(networkToHostOrder(socketEvent.DstAddr)),
+				int(portBytes[2])*256+int(portBytes[3]),
 				unix.ByteSliceToString(socketEvent.Payload[:]))
 		}
 	}()
-	time.Sleep(1000000 * time.Second)
+	time.Sleep(30 * time.Second)
+}
+
+func networkToHostOrder(ip uint32) [4]byte {
+	ipBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(ipBytes, ip)
+	for i, j := 0, len(ipBytes)-1; i < j; i, j = i+1, j-1 {
+		ipBytes[i], ipBytes[j] = ipBytes[j], ipBytes[i]
+	}
+	return [4]byte(ipBytes)
+}
+
+func uint32ToIPString(ipBytes [4]byte) string {
+	netIP := net.IPv4(ipBytes[0], ipBytes[1], ipBytes[2], ipBytes[3])
+	return netIP.String()
 }
 
 func openRawSock(index int) (int, error) {
