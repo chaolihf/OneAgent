@@ -29,7 +29,7 @@ import (
 )
 
 //export BPF2GO_FLAGS="-O2 -g -Wall"
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target amd64 -type event -type fileEvent bpf uretprobe.c -- -I /usr/src/linux-headers-6.5.0-17-generic/tools/bpf/resolve_btfids/libbpf/include
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target amd64 -type event -type fileEvent -type so_event bpf uretprobe.c -- -I /usr/src/linux-headers-6.5.0-17-generic/tools/bpf/resolve_btfids/libbpf/include
 
 const (
 	// The path to the ELF binary containing the function to trace.
@@ -298,8 +298,47 @@ func main() {
 	fmt.Printf("Filtering on eth index: %d\n", linkIndex)
 	fmt.Println("Packet stats:")
 
-	time.Sleep(30 * time.Second)
+	socketRingReader, err := ringbuf.NewReader(objs.SocketEvents)
+	if err != nil {
+		log.Fatalf("opening socket ringbuf reader: %s", err)
+	}
+	defer socketRingReader.Close()
 
+	// Close the reader when the process receives a signal, which will exit
+	// the read loop.
+	go func() {
+		<-stopper
+
+		if err := socketRingReader.Close(); err != nil {
+			log.Fatalf("closing socket ringbuf reader: %s", err)
+		}
+	}()
+
+	log.Printf("Listening for file create socket ring buffer events..")
+	func() {
+		var socketEvent bpfSoEvent
+		for {
+			record, err := socketRingReader.Read()
+			if err != nil {
+				if errors.Is(err, ringbuf.ErrClosed) {
+					log.Println("Received socket ring signal, exiting..")
+					return
+				}
+				log.Printf("reading from socket reader: %s", err)
+				continue
+			}
+
+			// Parse the socket ringbuf event entry into a socket Event structure.
+			if err := binary.Read(bytes.NewBuffer(record.RawSample), binary.LittleEndian, &socketEvent); err != nil {
+				log.Printf("parsing socket ringbuf event: %s", err)
+				continue
+			}
+			log.Printf("http request from %d:%d to %d:%d , content:%s\n",
+				socketEvent.SrcAddr, socketEvent.Ports>>2, socketEvent.DstAddr, (socketEvent.Ports&0xff00)>>2,
+				unix.ByteSliceToString(socketEvent.Payload[:]))
+		}
+	}()
+	time.Sleep(1000000 * time.Second)
 }
 
 func openRawSock(index int) (int, error) {

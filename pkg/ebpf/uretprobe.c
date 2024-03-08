@@ -6,12 +6,6 @@
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_endian.h>
-//#include <linux/if_ether.h>
-//#include <linux/ip.h>
-//#include <linux/in.h>
-//#include <linux/socket.h>
-//#include <linux/fs.h>
-//#include <linux/sched.h>
 
 char __license[] SEC("license") = "Dual MIT/GPL";
 
@@ -325,6 +319,11 @@ int sys_enter_accept(struct trace_event_raw_sys_enter *ctx)
     return 0;
 }
 
+struct
+{
+	__uint(type, BPF_MAP_TYPE_RINGBUF);
+	__uint(max_entries, 256 * 1024);
+} socketEvents SEC(".maps");
 
 #define IP_MF 0x2000
 #define IP_OFFSET 0x1FFF
@@ -346,6 +345,9 @@ struct so_event {
 	__u32 payload_length;
     __u8 payload[MAX_BUF_SIZE];
 };
+
+// Force emitting struct so_event into the ELF.
+const struct so_event *useSocketEventForGo __attribute__((unused));
 
 struct __tcphdr
 {
@@ -394,14 +396,11 @@ int socket_handler(struct __sk_buff *skb)
 	bpf_skb_load_bytes(skb, ETH_HLEN, &hdr_len, sizeof(hdr_len));
 	hdr_len &= 0x0f;
 	hdr_len *= 4;
-
 	/* verify hlen meets minimum size requirements */
 	if (hdr_len < sizeof(struct iphdr))
 	{
 		return 0;
 	}
-
-    
 
 	bpf_skb_load_bytes(skb, nhoff + offsetof(struct iphdr, protocol), &ip_proto, 1);
 
@@ -440,21 +439,21 @@ int socket_handler(struct __sk_buff *skb)
 	bpf_printk("receive http request %d len %d buffer: %s\n", payload_offset, payload_length, line_buffer);
 
 	// /* reserve sample from BPF ringbuf */
-	// e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
-	// if (!e)
-	// 	return 0;
+	e = bpf_ringbuf_reserve(&socketEvents, sizeof(*e), 0);
+	if (!e)
+		return 0;
 
-	// e->ip_proto = ip_proto;
-	// bpf_skb_load_bytes(skb, nhoff + hdr_len, &(e->ports), 4);
-	// e->pkt_type = skb->pkt_type;
-	// e->ifindex = skb->ifindex;
+	e->ip_proto = ip_proto;
+	bpf_skb_load_bytes(skb, nhoff + hdr_len, &(e->ports), 4);
+	e->pkt_type = skb->pkt_type;
+	e->ifindex = skb->ifindex;
 
-	// e->payload_length = payload_length;
-	// bpf_skb_load_bytes(skb, payload_offset, e->payload, MAX_BUF_SIZE);
+	e->payload_length = payload_length;
+	bpf_skb_load_bytes(skb, payload_offset, e->payload, MAX_BUF_SIZE);
 
-	// bpf_skb_load_bytes(skb, nhoff + offsetof(struct iphdr, saddr), &(e->src_addr), 4);
-	// bpf_skb_load_bytes(skb, nhoff + offsetof(struct iphdr, daddr), &(e->dst_addr), 4);
-	// bpf_ringbuf_submit(e, 0);
+	bpf_skb_load_bytes(skb, nhoff + offsetof(struct iphdr, saddr), &(e->src_addr), 4);
+	bpf_skb_load_bytes(skb, nhoff + offsetof(struct iphdr, daddr), &(e->dst_addr), 4);
+	bpf_ringbuf_submit(e, 0);
 
 	return skb->len;
 }
