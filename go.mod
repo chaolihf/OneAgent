@@ -15,7 +15,7 @@ require (
 )
 
 require (
-	github.com/chaolihf/node_exporter v1.6.7
+	github.com/chaolihf/node_exporter v1.6.11
 	github.com/go-kit/log v0.2.1
 )
 

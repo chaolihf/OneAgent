@@ -1,0 +1,1 @@
+GET http://localhost:9999/OneAgentMetrics?collect[]=process&&collect[]=cpu HTTP/1.1
