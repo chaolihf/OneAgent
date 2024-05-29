@@ -1,0 +1,85 @@
+{
+    "codeMaps":[
+        {
+            "name": "Operational",
+            "value":1   
+        }
+    ],
+    "metrics": [
+        {
+            "name": "Hadoop_NameNode_NN_FilesTotal"
+        },
+        {
+            "name": "Hadoop_NameNode_NN_RpcProcessingTimeAvgTime"
+        },
+        {
+            "name": "Hadoop_NameNode_NN_RpcQueueTimeAvgTime"
+        },
+        {
+            "name": "Hadoop_NameNode_NN_CallQueueLength"
+        },
+        {
+            "name": "Hadoop_NameNode_NN_FSState"
+        },
+        {
+            "name": "Hadoop_NameNode_NN_NumDeadDataNodes"
+        },
+        {
+            "name": "Hadoop_NameNode_NN_NumLiveDataNodes"
+        },
+        {
+            "name": "Hadoop_NameNode_NN_GcTimeMillis"
+        },
+        {
+            "name": "Hadoop_NameNode_NN_BlocksTotal"
+        },
+        {
+            "name": "Hadoop_NameNode_NN_CapacityUsed"
+        },
+        {
+            "name": "Hadoop_NameNode_NN_CapacityTotal"
+        },
+        {
+            "name":"Hadoop_HBase_HM_ritCount"
+        },
+        {
+            "name":"Hadoop_HBase_HM_numRegionServers"
+        },
+        {
+            "name":"Hadoop_HBase_HM_numDeadRegionServers"
+        },
+        {
+            "name":"Hadoop_HBase_HM_clusterRequests"
+        },
+        {
+            "name":"Hadoop_HBase_HM_averageLoad"
+        },
+        {
+            "name":"Hadoop_HBase_RS_Get_99th_percentile"
+        }
+    ],
+    "servers":[
+        {
+            "name": "192.168.100.6-namenode",
+            "url": "http://192.168.100.6:9870/jmx",
+            "module":"NN"
+        },
+        {
+            "name": "192.168.100.6-datanode",
+            "url": "http://192.168.100.6:9864/jmx",
+            "module":"DN"
+        },
+        {
+            "name": "192.168.100.6-hmaster",
+            "url": "http://192.168.100.6:16010/jmx",
+            "module":"HM"
+        },
+        {
+            "name": "192.168.100.6-regionserver",
+            "url": "http://192.168.100.6:16030/jmx",
+            "module":"RS"
+        }
+
+        
+    ]
+}
