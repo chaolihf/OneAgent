@@ -20,6 +20,8 @@ func TestPsModule(t *testing.T) {
 		return
 	} else {
 		for _, item := range allProcess {
+			nsPid, _ := item.GetNamespacePid()
+			fmt.Println(nsPid)
 			username, _ := item.Username()
 			fmt.Println(username)
 			name, _ := item.Name()

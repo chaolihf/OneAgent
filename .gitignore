@@ -3,3 +3,4 @@ logs/agent.log
 mock/mock
 OneAgent
 helloc/hello
+**/*.out

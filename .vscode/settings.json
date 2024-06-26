@@ -1,0 +1,28 @@
+{
+    "Codegeex.SidebarUI.LanguagePreference": "中文",
+    "files.associations": {
+        "cstdlib": "c",
+        "stdio.h": "c",
+        "sched.h": "c",
+        "cpu-set.h": "c",
+        "types.h": "c",
+        "unistd.h": "c",
+        "stdlib.h": "c",
+        "fcntl.h": "c",
+        "psutil.h": "c",
+        "syscall.h": "c",
+        "un.h": "c",
+        "sockaddr.h": "c",
+        "string.h": "c",
+        "common.h": "c",
+        "bpf_helpers.h": "c",
+        "bpf_helper_defs.h": "c",
+        "fs.h": "c",
+        "vmlinux.h": "c",
+        "bpf_tracing.h": "c"
+    },
+    "cmake.configureOnOpen": false,
+    "go.buildFlags": [
+        "--gcflags -std=c99"
+    ],
+}
