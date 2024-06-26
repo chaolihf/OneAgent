@@ -5,6 +5,24 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "test firewall js",
+            "program": "${workspaceFolder}/node_exporter/exporters/firewall/test/test.js",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
+            "name": "test switch js",
+            "program": "${workspaceFolder}/node_exporter/exporters/switchs/test/test.js",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
             "name": "调试本地进程（-gcflags=\"all=-N -l\"）",
             "type": "go",
             "request": "attach",

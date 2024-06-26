@@ -19,5 +19,5 @@
         "counterOffset":100,
         "localLog":true
     },
-    "module":["filebeat","node_exporter"]
+    "module":["filebeat","node_exporter","hadoop_exporter","switch_exporter"]
 }

@@ -2,6 +2,7 @@
    实现操作系统侧主要Promethus采集器的整合
 # 1、进展
    实现进程、网络链接、脚本采集功能
+    TODO:实时获取进程启动、退出消息；实时获取网络链接建立、断开消息、进程级流量的统计；实时获取Bash执行历史；实现对Java进程的自动注入；实现对HTTP网络报文、耗时等数据的自动获取；实时获取创建、删除文件的消息
 # 2、使用方法
   go build  
   ./OneAgent  
@@ -53,3 +54,6 @@ echo "a1{t1=\"t\"} 1"
 git clone https://github.com/chaolihf/OneAgent  
 git submodule init  
 git submodule update    
+
+# 7、开源项目
+实现远程进程注入 https://github.com/jattach/jattach/releases
