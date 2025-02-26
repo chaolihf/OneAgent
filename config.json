@@ -4,7 +4,7 @@
             
         ],
     "process":{
-        "enable":true,
+        "enable":0,
         "interval": 86400,
         "cpuOffset": 30,
         "memoryOffset": 200000000,
