@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"com.chinatelecom.oneops.exporter/OneAgent/exporter"
 	node_exporter_main "github.com/chaolihf/node_exporter"
 
 	//包引用是包含模块名/路径名/包名
@@ -28,7 +27,6 @@ type oneAgentCollector struct {
 }
 
 var logger *zap.Logger
-var loggerDatas *exporter.LoggerData
 var (
 	showVersion   = flag.Bool("version", false, "Print version information.")
 	listenAddress = flag.String("web.listen-address", ":19172", "The address to listen on for HTTP requests.")
@@ -78,10 +76,10 @@ func limitResource() {
 
 func main() {
 	logger.Info("host collector\n")
-	node_exporter_main.Main()
+	node_exporter_main.Main(logger)
 	flag.Parse()
 	if !strings.Contains(*listenAddress, ":9172") {
-		node_exporter_main.Main()
+		node_exporter_main.Main(logger)
 	}
 	if *showVersion {
 		fmt.Println("version V1.6.1")
