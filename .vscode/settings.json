@@ -25,4 +25,12 @@
     "go.buildFlags": [
         "--gcflags -std=c99"
     ],
+    "CodeFree.index": true,
+    "CodeFree.ignoreFileType": [
+        ".so",
+        ".cache",
+        ".exe",
+        ".dll",
+        ".log"
+    ],
 }
